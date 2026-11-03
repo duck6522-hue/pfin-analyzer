@@ -4,188 +4,269 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>家計アナライザ</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<meta name="theme-color" content="#f4f5f9">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
 <style>
-/* Layout: 1 column app. Upload strip on top, then period picker, KPIs, monthly trend, category + weekday, insights, big spends. */
+/* 見た目はサブスク管理 Pro に合わせる: 薄いグレー背景＋白い丸カード＋グラデーションのヘッダー */
 :root{
-  --bg:#f5f6f8; --surface:#ffffff; --ink:#14181f; --ink2:#4a525f; --muted:#7b8494; --line:#e2e5ea; --wash:#eef0f4;
-  --inc:#2a78d6; --exp:#eb6834; --exp-ink:#b4441a;
+  --bg:#f4f5f9; --surface:#ffffff; --ink:#14171f; --ink2:#4b5260; --muted:#7a8291; --line:#dfe2ea; --wash:#eceef4;
+  --p:hsl(207 90% 48%); --pe:hsl(242 100% 48%); --onp:#ffffff; --cl:50%;
+  --inc:#2a78d6; --exp:#eb6834;
   --good:#00703c; --warn:#9a6700; --crit:#c4262e;
   --good-bg:#e4f3ea; --warn-bg:#fbf0d3; --crit-bg:#fbe6e6; --info-bg:#e8eefa;
-  --btn:#14181f; --btn-ink:#ffffff;
-  --serif:'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif;
-  --sans:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif;
+  --sans:'Noto Sans JP','Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',Meiryo,sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#101318; --surface:#181c23; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2a303a; --wash:#1f242d;
-  --inc:#3987e5; --exp:#d95926; --exp-ink:#f08a5d;
+  --bg:#12141b; --surface:#1b1e27; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2c303c; --wash:#242835;
+  --inc:#3987e5; --exp:#e0662f;
   --good:#5fcf94; --warn:#e8b94a; --crit:#ff8a8f;
-  --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d;
-  --btn:#eceef2; --btn-ink:#101318; color-scheme:dark}}
+  --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#101318; --surface:#181c23; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2a303a; --wash:#1f242d;
-  --inc:#3987e5; --exp:#d95926; --exp-ink:#f08a5d;
+  --bg:#12141b; --surface:#1b1e27; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2c303c; --wash:#242835;
+  --inc:#3987e5; --exp:#e0662f;
   --good:#5fcf94; --warn:#e8b94a; --crit:#ff8a8f;
-  --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d;
-  --btn:#eceef2; --btn-ink:#101318; color-scheme:dark}
+  --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{color-scheme:light}
-body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;
-  padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:960px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-h1,h2{font-family:var(--serif);margin:0;text-wrap:balance}
-h1{font-size:28px;line-height:1.25}
-h2{font-size:18px}
-p{margin:0}
-.lead{color:var(--ink2);max-width:62ch}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p{margin:0}
+svg{display:block}
 .num{font-variant-numeric:tabular-nums}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
-.head{display:flex;flex-direction:column;gap:6px}
-.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.app{max-width:720px;margin:0 auto;min-height:100vh;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
-/* upload */
-.up{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
-.drop{border:1.5px dashed var(--muted);border-radius:10px;padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;cursor:pointer;background:var(--surface)}
-.drop.over{border-color:var(--inc);background:var(--info-bg)}
-.drop strong{font-size:16px}
-.drop small{color:var(--muted)}
-.drop input{position:absolute;opacity:0;width:1px;height:1px}
-.drop:focus-within{outline:2px solid var(--inc);outline-offset:2px}
-.memo{display:flex;flex-direction:column;gap:8px}
-textarea{width:100%;min-height:92px;resize:vertical;font:inherit;font-size:14px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-button,select{font:inherit}
-.btn{background:var(--btn);color:var(--btn-ink);border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500}
-.btn.sub{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--inc);outline-offset:2px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.status{font-size:13px;color:var(--ink2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:500;background:var(--info-bg);color:var(--ink)}
+/* app bar + tabs */
+.appbar{position:sticky;top:0;z-index:10;background:var(--bg);padding-top:env(safe-area-inset-top,0px)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px))}
+.top h1{font-size:24px;font-weight:900;letter-spacing:-1px;line-height:1.2}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
+.iconbtn:hover{background:var(--wash)}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;padding:12px 4px 11px;font-weight:700;color:var(--muted);position:relative;font-size:15px}
+.tabs button[aria-selected="true"]{color:var(--p);font-weight:900}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:50%;bottom:-1px;width:56px;height:3px;border-radius:3px 3px 0 0;background:var(--p);transform:translateX(-50%)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--p);outline-offset:2px}
+
+main{display:flex;flex-direction:column;gap:14px;padding-top:14px}
+main>*{margin-left:max(16px,env(safe-area-inset-left,0px));margin-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+
+/* gradient hero */
+.hero{border-radius:24px;padding:22px;color:var(--onp);background:linear-gradient(135deg,var(--p),var(--pe));box-shadow:0 6px 16px color-mix(in srgb,var(--p) 28%,transparent);display:flex;flex-direction:column;gap:14px}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hl{font-weight:700;opacity:.85;font-size:14px}
+.hv{font-size:38px;font-weight:900;letter-spacing:-1px;line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hv small{font-size:.62em;margin-left:6px;letter-spacing:0}
+.hs{font-size:12.5px;opacity:.85;margin-top:2px}
+.hicon{opacity:.35;flex:none}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:rgba(255,255,255,.16);border-radius:14px;padding:12px 14px;min-width:0}
+.tile .tl{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;opacity:.9}
+.tile .tv{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.35;margin-top:4px}
+.tile .tv small{font-size:11px;font-weight:700;margin-left:3px;opacity:.9}
+.tile .ts{font-size:11px;opacity:.85}
+.strip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);border-radius:14px;padding:10px 12px;font-size:13px;font-weight:700;flex-wrap:wrap}
+.strip b{margin-left:auto;font-size:16px;font-weight:900}
+.strip small{flex:1 1 100%;font-size:11.5px;font-weight:400;opacity:.85}
+.strip2{display:flex;height:14px;border-radius:8px;overflow:hidden;gap:2px;background:rgba(255,255,255,.18)}
+.strip2 i{display:block;min-width:3px}
+
+/* segmented + stepper */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--muted);border-radius:99px;overflow:hidden}
+.seg button{background:none;border:0;padding:10px 4px;font-weight:800;font-size:13.5px;border-left:1px solid var(--muted)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--p) 16%,transparent);color:var(--ink)}
+.step{display:flex;gap:8px;align-items:center}
+.step select{flex:1;min-width:0}
+.ib{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;flex:none}
+.ib:disabled{opacity:.35;cursor:default}
+select,.field{min-height:44px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);max-width:100%}
+.meta{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.meta label{display:flex;gap:6px;align-items:center}
+.meta input{width:18px;height:18px}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--info-bg);color:var(--ink)}
+.meta .pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pill.sample{background:var(--warn-bg);color:var(--warn)}
-details.map{font-size:13px}
-details.map summary{cursor:pointer;color:var(--ink2)}
-.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
-.mapgrid label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
-select{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);max-width:100%}
 
-/* period */
-.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
-.bar label{display:flex;gap:8px;align-items:center;color:var(--ink2)}
-
-/* kpi */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.kpi{display:flex;flex-direction:column;gap:2px}
-.kpi .k{font-size:12px;color:var(--muted);letter-spacing:.06em}
-.kpi .v{font-family:var(--serif);font-weight:700;font-size:28px;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.kpi .d{font-size:12.5px;color:var(--ink2)}
-.v.neg{color:var(--crit)}
-
-/* charts */
-.legend{display:flex;gap:14px;font-size:13px;color:var(--ink2);margin:8px 0}
-.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+/* cards */
+.card{background:var(--surface);border-radius:18px;padding:18px;min-width:0;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.ch{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ch .ico{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,var(--p),var(--pe));color:#fff;display:grid;place-items:center;flex:none}
+.ch h2{font-size:15px;font-weight:900}
+.ch .sp{flex:1}
+.foot{font-size:12.5px;color:var(--muted)}
 .scroll{overflow-x:auto}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);margin-bottom:8px;flex-wrap:wrap}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 svg text{font-family:var(--sans);fill:var(--muted);font-size:11px}
-.wrap>*,.up>*,.two>*{min-width:0}
-.two{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
-.cats{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.cat{display:grid;grid-template-columns:minmax(72px,110px) 1fr auto;gap:10px;align-items:center;font-size:14px}
-.cat .t{height:12px;background:var(--wash);border-radius:3px;overflow:hidden}
-.cat .t i{display:block;height:100%;background:var(--exp);border-radius:0 4px 4px 0}
-.cat .n{overflow-wrap:anywhere}
-.cat .a{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.cat .a em{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px}
-.wk{display:flex;gap:8px;align-items:flex-end;height:150px;margin-top:14px}
-.wk div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px;color:var(--muted)}
-.wk i{display:block;width:100%;max-width:30px;background:var(--exp);border-radius:4px 4px 0 0;min-height:2px}
-.wk b{font-weight:500;color:var(--ink2)}
+.hint{display:flex;gap:10px 12px;align-items:center;flex-wrap:wrap;background:var(--warn-bg)}
+.hint strong{flex:1 1 100%;font-weight:900}
+.hint span{flex:1 1 200px;color:var(--ink2);font-size:14px}
+.btn{background:linear-gradient(135deg,var(--p),var(--pe));color:var(--onp);border:0;border-radius:14px;padding:10px 18px;min-height:44px;font-weight:800}
+.btn.sub{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{min-height:34px;padding:4px 14px;font-size:13px;border-radius:12px}
 
 /* insights */
-.ins{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.in{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px;border-radius:8px;background:var(--wash)}
-.tag{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;height:fit-content;white-space:nowrap}
+.ins{display:flex;flex-direction:column;gap:10px}
+.in{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:12px;border-radius:14px;background:var(--wash)}
+.tag{font-size:11.5px;font-weight:900;border-radius:10px;padding:2px 9px;height:fit-content;white-space:nowrap}
 .tag.good{background:var(--good-bg);color:var(--good)}
 .tag.warn{background:var(--warn-bg);color:var(--warn)}
 .tag.crit{background:var(--crit-bg);color:var(--crit)}
 .tag.info{background:var(--info-bg);color:var(--ink)}
-.in h3{margin:0;font-size:14.5px}
-.in p{color:var(--ink2);font-size:14px}
+.in h3{font-size:14.5px;font-weight:800}
+.in p{color:var(--ink2);font-size:13.5px}
 
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
-th{font-size:12px;color:var(--muted);font-weight:500}
-td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
-.empty{color:var(--muted);padding:12px 0}
-#tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:6px;font-size:12.5px;white-space:pre;max-width:260px}
-.foot{font-size:12.5px;color:var(--muted)}
-@media (max-width:720px){.up,.two{grid-template-columns:1fr}h1{font-size:24px}}
-@media (prefers-reduced-motion:no-preference){.cat .t i,.wk i{transition:width .3s,height .3s}}
+/* weekday */
+.wk{display:flex;gap:8px;align-items:flex-end;height:150px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:11.5px;color:var(--muted)}
+.wk i{display:block;width:100%;max-width:30px;background:linear-gradient(180deg,var(--exp),color-mix(in srgb,var(--exp) 70%,#ff2d95));border-radius:8px 8px 0 0;min-height:3px}
+.wk b{font-weight:700;color:var(--ink2)}
+.wk div{min-width:0;font-size:10.5px}.wk span{white-space:nowrap}
 
-/* usability */
-.bar{position:sticky;top:max(8px,env(safe-area-inset-top,0px));z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.08);padding:8px 12px}
-.meta{justify-content:space-between;margin:-8px 0}
-.nav{display:flex;gap:6px;align-items:center}
-.ib{min-width:40px;min-height:40px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;cursor:pointer;font-size:20px;line-height:1}
-.ib:disabled{opacity:.35;cursor:default}
-.ib:focus-visible,.cat:focus-visible,#q:focus-visible,svg [data-ym]:focus-visible{outline:2px solid var(--inc);outline-offset:2px}
-.btn,select{min-height:40px}
-.btn.sm{min-height:32px;padding:3px 12px;font-size:13px}
-button.cat{width:100%;background:none;border:0;padding:7px 8px;border-radius:8px;text-align:left;color:inherit;cursor:pointer;font:inherit;font-size:14px}
-button.cat:hover{background:var(--wash)}
-button.cat[aria-pressed="true"]{background:var(--info-bg)}
-.cats{gap:2px}
-div.cat{padding:7px 8px}
-.hint{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);border-color:transparent}
-.hint span{flex:1 1 220px;color:var(--ink2);font-size:14px}
-.hint strong{flex:1 1 100%}
-details.upbox>summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--ink)}
-details.upbox[open]>summary{margin-bottom:6px}
-.mini{display:flex;gap:4px;align-items:flex-end;height:96px;overflow-x:auto;margin:10px 0 4px;padding-bottom:2px}
-.mini div{flex:0 0 26px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
-.mini i{display:block;width:16px;background:var(--exp);border-radius:3px 3px 0 0;min-height:1px}
+/* donut + ranking */
+.donut{position:relative;width:min(100%,260px);margin:4px auto 0;aspect-ratio:1}
+.donut svg{width:100%;height:100%}
+.donut path,.donut circle{cursor:pointer;transition:opacity .15s}
+.dcenter{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none;padding:0 20%}
+.dcenter small{font-size:12px;font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dcenter b{white-space:nowrap;font-size:18px;font-weight:900;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.dcenter em{font-style:normal;font-size:12px;color:var(--muted);font-weight:700}
+.rank{display:flex;flex-direction:column;gap:2px}
+button.rrow{display:block;width:100%;text-align:left;background:none;border:0;padding:9px 6px;border-radius:12px}
+button.rrow:hover{background:var(--wash)}
+.rtop{display:flex;align-items:center;gap:10px}
+.rtop .nm{flex:1;min-width:0;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtop .am{font-weight:900;font-variant-numeric:tabular-nums}
+.rtop .sh{width:44px;text-align:right;font-size:12px;font-weight:700;color:var(--muted)}
+.badge{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--c),var(--c2));flex:none}
+.dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(90deg,var(--c),var(--c2));flex:none}
+.rbar{height:12px;border-radius:8px;margin-top:8px;background:color-mix(in srgb,var(--c) 15%,transparent)}
+.rbar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--c),var(--c2))}
+
+/* tx tab */
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:16px;padding:0 14px;color:var(--muted)}
+.search input{flex:1;min-width:0;border:0;background:transparent;min-height:50px;font-size:15px;color:var(--ink);outline:none}
+.search:focus-within{outline:2px solid var(--p)}
+.pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pillb{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-weight:800;font-size:14px;white-space:nowrap}
+.pillb[aria-pressed="true"]{background:var(--p);border-color:var(--p);color:var(--onp)}
+.pillb .dot{width:10px;height:10px}
+.lrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lrow .cnt{flex:1 1 100%;font-weight:800;color:var(--muted)}
+.lrow select{flex:1 1 40%}
+.lrow select{min-height:40px;font-weight:700;font-size:14px}
+.txs{display:flex;flex-direction:column;gap:10px}
+.txc{display:flex;background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:16px;overflow:hidden;min-width:0}
+.txc .stripe{width:6px;flex:none;background:linear-gradient(180deg,var(--c),var(--c2))}
+.txc .tb{flex:1;min-width:0;padding:12px 8px 12px 14px}
+.txc .tn{font-weight:800;font-size:15.5px;overflow-wrap:anywhere;line-height:1.4}
+.txc .tg{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px;align-items:center}
+.dbadge{font-size:12px;font-weight:900;padding:2px 8px;border-radius:10px;background:var(--wash);color:var(--ink2)}
+.ctag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--ink)}
+.ctag.x{background:var(--wash);color:var(--ink2)}
+.txc .ta{padding:12px 16px 12px 4px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;white-space:nowrap}
+.txc .ta b{font-size:17px;font-weight:900;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.txc .ta b.in2{color:var(--p)}
+.mini{display:flex;gap:4px;align-items:flex-end;height:96px;overflow-x:auto;padding-bottom:2px}
+.mini div{flex:0 0 28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
+.mini i{display:block;width:18px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--c),var(--c2));min-height:2px}
 .mini div.on b{color:var(--ink)}
-.mini b{font-weight:500}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
-#q{flex:1 1 180px;min-width:0;font:inherit;padding:8px 10px;min-height:40px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.chip{display:inline-block;font-size:11px;padding:0 6px;border-radius:4px;background:var(--wash);color:var(--ink2);margin-left:6px}
-td small{display:block;color:var(--muted);font-size:12px}
-td.d{white-space:nowrap;color:var(--ink2)}
-.txt table{min-width:0}
+.mini b{font-weight:700}
+.empty{color:var(--muted);text-align:center;padding:36px 0}
 
+/* fab */
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;gap:8px;height:56px;padding:0 22px 0 16px;border:0;border-radius:18px;background:var(--p);color:var(--onp);font-weight:800;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(10,12,20,.45);z-index:30}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;margin:0 auto;max-width:620px;max-height:90vh;overflow-y:auto;background:var(--bg);border-radius:28px 28px 0 0;padding:10px max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet:focus{outline:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
+.sheet h2{font-size:20px;font-weight:900;margin-bottom:12px}
+.sheet h3{font-size:13.5px;font-weight:900;color:var(--ink2);margin:18px 0 10px}
+.sheet section+section{margin-top:14px}
+.drop{border:1.5px dashed var(--muted);border-radius:18px;padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;cursor:pointer;background:var(--surface)}
+.drop.over{border-color:var(--p);background:var(--info-bg)}
+.drop strong{font-size:16px;font-weight:900}
+.drop small{color:var(--muted);font-size:12.5px}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within{outline:2px solid var(--p);outline-offset:2px}
+textarea{width:100%;min-height:96px;resize:vertical;font-size:14px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+details.map{font-size:13px;margin-top:12px}
+details.map summary{cursor:pointer;color:var(--ink2)}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px}
+.mapgrid label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
+.status{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink2);min-height:8px;margin-top:10px}
+.setrow{display:flex;align-items:center;gap:14px;padding:10px 0;font-weight:800}
+.setrow span{flex:1}
+.setrow small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.sw2{appearance:none;width:52px;height:32px;border-radius:99px;border:2px solid var(--muted);background:var(--wash);position:relative;cursor:pointer;flex:none}
+.sw2::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.sw2:checked{background:var(--p);border-color:var(--p)}
+.sw2:checked::after{transform:translateX(20px);background:#fff}
+.gp,.tc{display:flex;flex-wrap:wrap;gap:12px 14px}
+.gpb{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-weight:700;width:84px;white-space:nowrap}
+.gpb i,.tcb{width:48px;height:48px;border-radius:50%;display:block;border:2px solid transparent}
+.tcb{width:40px;height:40px;border:1px solid var(--line)}
+.gpb[aria-pressed="true"] i,.tcb[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.note{font-size:12px;color:var(--muted);line-height:1.7}
+#tip{position:fixed;z-index:40;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:8px;font-size:12.5px;white-space:pre;max-width:260px}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(40px);opacity:0}}.rbar i{transition:width .3s}}
+@media (max-width:420px){.hv{font-size:34px}.tabs button{font-size:14px}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="head">
-    <span class="eyebrow">PFIN ANALYZER</span>
-    <h1>家計アナライザ</h1>
-    <p class="lead">家計簿アプリの CSV や PDF を読み込むと、収支・カテゴリ・固定費・使いすぎの傾向をまとめます。データはこのブラウザの中だけで処理され、外には送られません。</p>
+<div class="app">
+  <header class="appbar">
+    <div class="top"><h1>家計アナライザ</h1>
+      <button class="iconbtn" id="btnSettings" type="button" aria-label="設定"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg></button>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="表示の切り替え">
+      <button role="tab" type="button" data-tab="sum">サマリー</button>
+      <button role="tab" type="button" data-tab="cat">分類</button>
+      <button role="tab" type="button" data-tab="tx">明細</button>
+    </nav>
   </header>
+  <main id="out"></main>
+</div>
+<button class="fab" id="fab" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>データを読み込む</button>
 
-  <details class="upbox" id="upBox" open><summary id="upSum">データを読み込む</summary>
-  <section class="up" aria-label="データの取り込み">
+<div class="scrim" id="scrim" hidden></div>
+
+<section class="sheet" id="sheetAdd" tabindex="-1" role="dialog" aria-label="データを読み込む" hidden>
+  <div class="grab"></div>
+  <h2>データを読み込む</h2>
+  <section>
     <label class="drop" id="drop">
       <input type="file" id="file" accept=".csv,.tsv,.txt,.pdf,text/csv,text/plain,application/pdf">
       <strong>CSV / PDF を選ぶ</strong>
       <small>タップして選択（PC ではドロップも可）。CSV（マネーフォワード ME / Zaim / 銀行・カード明細）と、iPhone の家計簿アプリ（MoneyNote など）で書き出した表形式の PDF に対応</small>
     </label>
-    <div class="card memo">
-      <label for="memo"><strong>メモから読み取る</strong></label>
-      <textarea id="memo" placeholder="1行に1件ずつ&#10;10/3 ランチ 850&#10;10/5 スーパー 4,320&#10;10/25 給料 +280000"></textarea>
-      <div class="row"><button class="btn" id="memoGo" type="button">メモを分析</button><button class="btn sub" id="sampleGo" type="button">サンプルで試す</button></div>
-    </div>
   </section>
-  </details>
-
-  <div class="status" id="status"></div>
+  <section class="card">
+    <label for="memo"><strong>メモから読み取る</strong></label>
+    <textarea id="memo" placeholder="1行に1件ずつ&#10;10/3 ランチ 850&#10;10/5 スーパー 4,320&#10;10/25 給料 +280000"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" id="memoGo" type="button">メモを分析</button><button class="btn sub" id="sampleGo" type="button">サンプルで試す</button></div>
+  </section>
+  <div class="status" id="status" role="status"></div>
   <details class="map" id="mapBox" hidden><summary>列の対応を確認・変更する</summary><div class="mapgrid" id="mapGrid"></div></details>
+  <p class="note" style="margin-top:14px">データはこのブラウザの中だけで処理され、外には送られません。</p>
+</section>
 
-  <main id="out" class="wrap" style="gap:20px"></main>
-  <p class="foot">分類が無い明細は、店名や内容のキーワードから推定します。振替・カード引き落とし・「計算対象外」の行は集計から除きます。読み込んだデータはこの端末のブラウザにだけ保存され、「保存データを消去」でいつでも削除できます。</p>
-</div>
+<section class="sheet" id="sheetSet" tabindex="-1" role="dialog" aria-label="設定" hidden>
+  <div class="grab"></div>
+  <h2>設定</h2>
+  <div id="setBody"></div>
+</section>
 <div id="tip" hidden></div>
-
 <script>
 const JP1="\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[¥]^_`abcdefghijklmnopqrstuvwxyz{¦}˜ʼ\\ʻ|~¡¢£⁄ƒ\u0000¤“«‹›ﬁﬂ‒\u0000\u0000·\u0000•‚„”»\u0000\u0000¿́ˆ¯̆̇̈˚¸̶̨̋̌ÆªŁØŒºæıłøœß­©¬®\u0000\u0000²³µ¹¼½¾ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ\u0000ÙÚÛÜÝÞàáâãäåçèéêëìíîïðñòóôõö\u0000ùúûüýþÿŠŸŽ̅š™ž\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~｡｢｣､･ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝﾞﾟ\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000　、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー―‐／＼〜‖｜…‥‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋−±×÷＝≠＜＞≦≧∞∴♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓〓∈∋⊆⊇⊂⊃∪∩∧∨￢⇒⇔∀∃∠⊥⌒∂∇≡≒≪≫√∽∝∵∫∬Å‰♯♭♪†‡¶◯０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρστυφχψωАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя亜唖娃阿哀愛挨姶逢葵茜穐悪握渥旭葦芦鯵梓圧斡扱宛姐虻飴絢綾鮎或粟袷安庵按暗案闇鞍杏以伊位依偉囲夷委威尉惟意慰易椅為畏異移維緯胃萎衣謂違遺医井亥域育郁磯一壱溢逸稲茨芋鰯允印咽員因姻引飲淫胤蔭院陰隠韻吋右宇烏羽迂雨卯鵜窺丑碓臼渦嘘唄欝蔚鰻姥厩浦瓜閏噂云運雲荏餌叡営嬰影映曳栄永泳洩瑛盈穎頴英衛詠鋭液疫益駅悦謁越閲榎厭円園堰奄宴延怨掩援沿演炎焔煙燕猿縁艶苑薗遠鉛鴛塩於汚甥凹央奥往応押旺横欧殴王翁襖鴬鴎黄岡沖荻億屋憶臆桶牡乙俺卸恩温穏音下化仮何伽価佳加可嘉夏嫁家寡科暇果架歌河火珂禍禾稼箇花苛茄荷華菓蝦課嘩貨迦過霞蚊俄峨我牙画臥芽蛾賀雅餓駕介会解回塊壊廻快怪悔恢懐戒拐改魁晦械海灰界皆絵芥蟹開階貝凱劾外咳害崖慨概涯碍蓋街該鎧骸浬馨蛙垣柿蛎鈎劃嚇各廓拡撹格核殻獲確穫覚角赫較郭閣隔革学岳楽額顎掛笠樫橿梶鰍潟割喝恰括活渇滑葛褐轄且鰹叶椛樺鞄株兜竃蒲釜鎌噛鴨栢茅萱粥刈苅瓦乾侃冠寒刊勘勧巻喚堪姦完官寛干幹患感慣憾換敢柑桓棺款歓汗漢澗潅環甘監看竿管簡緩缶翰肝艦莞観諌貫還鑑間閑関陥韓館舘丸含岸巌玩癌眼岩翫贋雁頑顔願企伎危喜器基奇嬉寄岐希幾忌揮机旗既期棋棄機帰毅気汽畿祈季稀紀徽規記貴起軌輝飢騎鬼亀偽儀妓宜戯技擬欺犠疑祇義蟻誼議掬菊鞠吉吃喫桔橘詰砧杵黍却客脚虐逆丘久仇休及吸宮弓急救朽求汲泣灸球究窮笈級糾給旧牛去居巨拒拠挙渠虚許距鋸漁禦魚亨享京供侠僑兇競共凶協匡卿叫喬境峡強彊怯恐恭挟教橋況狂狭矯胸脅興蕎郷鏡響饗驚仰凝尭暁業局曲極玉桐粁僅勤均巾錦斤欣欽琴禁禽筋緊芹菌衿襟謹近金吟銀九倶句区狗玖矩苦躯駆駈駒具愚虞喰空偶寓遇隅串櫛釧屑屈掘窟沓靴轡窪熊隈粂栗繰桑鍬勲君薫訓群軍郡卦袈祁係傾刑兄啓圭珪型契形径恵慶慧憩掲携敬景桂渓畦稽系経継繋罫茎荊蛍計詣警軽頚鶏芸迎鯨劇戟撃激隙桁傑欠決潔穴結血訣月件倹倦健兼券剣喧圏堅嫌建憲懸拳捲検権牽犬献研硯絹県肩見謙賢軒遣鍵険顕験鹸元原厳幻弦減源玄現絃舷言諺限乎個古呼固姑孤己庫弧戸故枯湖狐糊袴股胡菰虎誇跨鈷雇顧鼓五互伍午呉吾娯後御悟梧檎瑚碁語誤護醐乞鯉交佼侯候倖光公功効勾厚口向后喉坑垢好孔孝宏工巧巷幸広庚康弘恒慌抗拘控攻昂晃更杭校梗構江洪浩港溝甲皇硬稿糠紅紘絞綱耕考肯肱腔膏航荒行衡講貢購郊酵鉱砿鋼閤降項香高鴻剛劫号合壕拷濠豪轟麹克刻告国穀酷鵠黒獄漉腰甑忽惚骨狛込此頃今困坤墾婚恨懇昏昆根梱混痕紺艮魂些佐叉唆嵯左差査沙瑳砂詐鎖裟坐座挫債催再最哉塞妻宰彩才採栽歳済災采犀砕砦祭斎細菜裁載際剤在材罪財冴坂阪堺榊肴咲崎埼碕鷺作削咋搾昨朔柵窄策索錯桜鮭笹匙冊刷察拶撮擦札殺薩雑皐鯖捌錆鮫皿晒三傘参山惨撒散桟燦珊産算纂蚕讃賛酸餐斬暫残仕仔伺使刺司史嗣四士始姉姿子屍市師志思指支孜斯施旨枝止死氏獅祉私糸紙紫肢脂至視詞詩試誌諮資賜雌飼歯事似侍児字寺慈持時次滋治爾璽痔磁示而耳自蒔辞汐鹿式識鴫竺軸宍雫七叱執失嫉室悉湿漆疾質実蔀篠偲柴芝屡蕊縞舎写射捨赦斜煮社紗者謝車遮蛇邪借勺尺杓灼爵酌釈錫若寂弱惹主取守手朱殊狩珠種腫趣酒首儒受呪寿授樹綬需囚収周宗就州修愁拾洲秀秋終繍習臭舟蒐衆襲讐蹴輯週酋酬集醜什住充十従戎柔汁渋獣縦重銃叔夙宿淑祝縮粛塾熟出術述俊峻春瞬竣舜駿准循旬楯殉淳準潤盾純巡遵醇順処初所暑曙渚庶緒署書薯藷諸助叙女序徐恕鋤除傷償勝匠升召哨商唱嘗奨妾娼宵将小少尚庄床廠彰承抄招掌捷昇昌昭晶松梢樟樵沼消渉湘焼焦照症省硝礁祥称章笑粧紹肖菖蒋蕉衝裳訟証詔詳象賞醤鉦鍾鐘障鞘上丈丞乗冗剰城場壌嬢常情擾条杖浄状畳穣蒸譲醸錠嘱埴飾拭植殖燭織職色触食蝕辱尻伸信侵唇娠寝審心慎振新晋森榛浸深申疹真神秦紳臣芯薪親診身辛進針震人仁刃塵壬尋甚尽腎訊迅陣靭笥諏須酢図厨逗吹垂帥推水炊睡粋翠衰遂酔錐錘随瑞髄崇嵩数枢趨雛据杉椙菅頗雀裾澄摺寸世瀬畝是凄制勢姓征性成政整星晴棲栖正清牲生盛精聖声製西誠誓請逝醒青静斉税脆隻席惜戚斥昔析石積籍績脊責赤跡蹟碩切拙接摂折設窃節説雪絶舌蝉仙先千占宣専尖川戦扇撰栓栴泉浅洗染潜煎煽旋穿箭線繊羨腺舛船薦詮賎践選遷銭銑閃鮮前善漸然全禅繕膳糎噌塑岨措曾曽楚狙疏疎礎祖租粗素組蘇訴阻遡鼠僧創双叢倉喪壮奏爽宋層匝惣想捜掃挿掻操早曹巣槍槽漕燥争痩相窓糟総綜聡草荘葬蒼藻装走送遭鎗霜騒像増憎臓蔵贈造促側則即息捉束測足速俗属賊族続卒袖其揃存孫尊損村遜他多太汰詑唾堕妥惰打柁舵楕陀駄騨体堆対耐岱帯待怠態戴替泰滞胎腿苔袋貸退逮隊黛鯛代台大第醍題鷹滝瀧卓啄宅托択拓沢濯琢託鐸濁諾茸凧蛸只叩但達辰奪脱巽竪辿棚谷狸鱈樽誰丹単嘆坦担探旦歎淡湛炭短端箪綻耽胆蛋誕鍛団壇弾断暖檀段男談値知地弛恥智池痴稚置致蜘遅馳築畜竹筑蓄逐秩窒茶嫡着中仲宙忠抽昼柱注虫衷註酎鋳駐樗瀦猪苧著貯丁兆凋喋寵帖帳庁弔張彫徴懲挑暢朝潮牒町眺聴脹腸蝶調諜超跳銚長頂鳥勅捗直朕沈珍賃鎮陳津墜椎槌追鎚痛通塚栂掴槻佃漬柘辻蔦綴鍔椿潰坪壷嬬紬爪吊釣鶴亭低停偵剃貞呈堤定帝底庭廷弟悌抵挺提梯汀碇禎程締艇訂諦蹄逓邸鄭釘鼎泥摘擢敵滴的笛適鏑溺哲徹撤轍迭鉄典填天展店添纏甜貼転顛点伝殿澱田電兎吐堵塗妬屠徒斗杜渡登菟賭途都鍍砥砺努度土奴怒倒党冬凍刀唐塔塘套宕島嶋悼投搭東桃梼棟盗淘湯涛灯燈当痘祷等答筒糖統到董蕩藤討謄豆踏逃透鐙陶頭騰闘働動同堂導憧撞洞瞳童胴萄道銅峠鴇匿得徳涜特督禿篤毒独読栃橡凸突椴届鳶苫寅酉瀞噸屯惇敦沌豚遁頓呑曇鈍奈那内乍凪薙謎灘捺鍋楢馴縄畷南楠軟難汝二尼弐迩匂賑肉虹廿日乳入如尿韮任妊忍認濡禰祢寧葱猫熱年念捻撚燃粘乃廼之埜嚢悩濃納能脳膿農覗蚤巴把播覇杷波派琶破婆罵芭馬俳廃拝排敗杯盃牌背肺輩配倍培媒梅楳煤狽買売賠陪這蝿秤矧萩伯剥博拍柏泊白箔粕舶薄迫曝漠爆縛莫駁麦函箱硲箸肇筈櫨幡肌畑畠八鉢溌発醗髪伐罰抜筏閥鳩噺塙蛤隼伴判半反叛帆搬斑板氾汎版犯班畔繁般藩販範釆煩頒飯挽晩番盤磐蕃蛮匪卑否妃庇彼悲扉批披斐比泌疲皮碑秘緋罷肥被誹費避非飛樋簸備尾微枇毘琵眉美鼻柊稗匹疋髭彦膝菱肘弼必畢筆逼桧姫媛紐百謬俵彪標氷漂瓢票表評豹廟描病秒苗錨鋲蒜蛭鰭品彬斌浜瀕貧賓頻敏瓶不付埠夫婦富冨布府怖扶敷斧普浮父符腐膚芙譜負賦赴阜附侮撫武舞葡蕪部封楓風葺蕗伏副復幅服福腹複覆淵弗払沸仏物鮒分吻噴墳憤扮焚奮粉糞紛雰文聞丙併兵塀幣平弊柄並蔽閉陛米頁僻壁癖碧別瞥蔑箆偏変片篇編辺返遍便勉娩弁鞭保舗鋪圃捕歩甫補輔穂募墓慕戊暮母簿菩倣俸包呆報奉宝峰峯崩庖抱捧放方朋法泡烹砲縫胞芳萌蓬蜂褒訪豊邦鋒飽鳳鵬乏亡傍剖坊妨帽忘忙房暴望某棒冒紡肪膨謀貌貿鉾防吠頬北僕卜墨撲朴牧睦穆釦勃没殆堀幌奔本翻凡盆摩磨魔麻埋妹昧枚毎哩槙幕膜枕鮪柾鱒桝亦俣又抹末沫迄侭繭麿万慢満漫蔓味未魅巳箕岬密蜜湊蓑稔脈妙粍民眠務夢無牟矛霧鵡椋婿娘冥名命明盟迷銘鳴姪牝滅免棉綿緬面麺摸模茂妄孟毛猛盲網耗蒙儲木黙目杢勿餅尤戻籾貰問悶紋門匁也冶夜爺耶野弥矢厄役約薬訳躍靖柳薮鑓愉愈油癒諭輸唯佑優勇友宥幽悠憂揖有柚湧涌猶猷由祐裕誘遊邑郵雄融夕予余与誉輿預傭幼妖容庸揚揺擁曜楊様洋溶熔用窯羊耀葉蓉要謡踊遥陽養慾抑欲沃浴翌翼淀羅螺裸来莱頼雷洛絡落酪乱卵嵐欄濫藍蘭覧利吏履李梨理璃痢裏裡里離陸律率立葎掠略劉流溜琉留硫粒隆竜龍侶慮旅虜了亮僚両凌寮料梁涼猟療瞭稜糧良諒遼量陵領力緑倫厘林淋燐琳臨輪隣鱗麟瑠塁涙累類令伶例冷励嶺怜玲礼苓鈴隷零霊麗齢暦歴列劣烈裂廉恋憐漣煉簾練聯蓮連錬呂魯櫓炉賂路露労婁廊弄朗楼榔浪漏牢狼篭老聾蝋郎六麓禄肋録論倭和話歪賄脇惑枠鷲亙亘鰐詫藁蕨椀湾碗腕弌丐丕个丱丶丼丿乂乖乘亂亅豫亊舒弍于亞亟亠亢亰亳亶从仍仄仆仂仗仞仭仟价伉佚估佛佝佗佇佶侈侏侘佻佩佰侑佯來侖儘俔俟俎俘俛俑俚俐俤俥倚倨倔倪倥倅伜俶倡倩倬俾俯們倆偃假會偕偐偈做偖偬偸傀傚傅傴傲僉僊傳僂僖僞僥僭僣僮價僵儉儁儂儖儕儔儚儡儺儷儼儻儿兀兒兌兔兢竸兩兪兮冀冂囘册冉冏冑冓冕冖冤冦冢冩冪冫决冱冲冰况冽凅凉凛几處凩凭凰凵凾刄刋刔刎刧刪刮刳刹剏剄剋剌剞剔剪剴剩剳剿剽劍劔劒剱劈劑辨辧劬劭劼劵勁勍勗勞勣勦飭勠勳勵勸勹匆匈甸匍匐匏匕匚匣匯匱匳匸區卆卅丗卉卍凖卞卩卮夘卻卷厂厖厠厦厥厮厰厶參簒雙叟曼燮叮叨叭叺吁吽呀听吭吼吮吶吩吝呎咏呵咎呟呱呷呰咒呻咀呶咄咐咆哇咢咸咥咬哄哈咨咫哂咤咾咼哘哥哦唏唔哽哮哭哺哢唹啀啣啌售啜啅啖啗唸唳啝喙喀咯喊喟啻啾喘喞單啼喃喩喇喨嗚嗅嗟嗄嗜嗤嗔嘔嗷嘖嗾嗽嘛嗹噎噐營嘴嘶嘲嘸噫噤嘯噬噪嚆嚀嚊嚠嚔嚏嚥嚮嚶嚴囂嚼囁囃囀囈囎囑囓囗囮囹圀囿圄圉圈國圍圓團圖嗇圜圦圷圸坎圻址坏坩埀垈坡坿垉垓垠垳垤垪垰埃埆埔埒埓堊埖埣堋堙堝塲堡塢塋塰毀塒堽塹墅墹墟墫墺壞墻墸墮壅壓壑壗壙壘壥壜壤壟壯壺壹壻壼壽夂夊夐夛梦夥夬夭夲夸夾竒奕奐奎奚奘奢奠奧奬奩奸妁妝佞侫妣妲姆姨姜妍姙姚娥娟娑娜娉娚婀婬婉娵娶婢婪媚媼媾嫋嫂媽嫣嫗嫦嫩嫖嫺嫻嬌嬋嬖嬲嫐嬪嬶嬾孃孅孀孑孕孚孛孥孩孰孳孵學斈孺宀它宦宸寃寇寉寔寐寤實寢寞寥寫寰寶寳尅將專對尓尠尢尨尸尹屁屆屎屓屐屏孱屬屮乢屶屹岌岑岔妛岫岻岶岼岷峅岾峇峙峩峽峺峭嶌峪崋崕崗嵜崟崛崑崔崢崚崙崘嵌嵒嵎嵋嵬嵳嵶嶇嶄嶂嶢嶝嶬嶮嶽嶐嶷嶼巉巍巓巒巖巛巫已巵帋帚帙帑帛帶帷幄幃幀幎幗幔幟幢幤幇幵并幺麼广庠廁廂廈廐廏廖廣廝廚廛廢廡廨廩廬廱廳廰廴廸廾弃弉彝彜弋弑弖弩弭弸彁彈彌彎弯彑彖彗彙彡彭彳彷徃徂彿徊很徑徇從徙徘徠徨徭徼忖忻忤忸忱忝悳忿怡恠怙怐怩怎怱怛怕怫怦怏怺恚恁恪恷恟恊恆恍恣恃恤恂恬恫恙悁悍惧悃悚悄悛悖悗悒悧悋惡悸惠惓悴忰悽惆悵惘慍愕愆惶惷愀惴惺愃愡惻惱愍愎慇愾愨愧慊愿愼愬愴愽慂慄慳慷慘慙慚慫慴慯慥慱慟慝慓慵憙憖憇憬憔憚憊憑憫憮懌懊應懷懈懃懆憺懋罹懍懦懣懶懺懴懿懽懼懾戀戈戉戍戌戔戛戞戡截戮戰戲戳扁扎扞扣扛扠扨扼抂抉找抒抓抖拔抃抔拗拑抻拏拿拆擔拈拜拌拊拂拇抛拉挌拮拱挧挂挈拯拵捐挾捍搜捏掖掎掀掫捶掣掏掉掟掵捫捩掾揩揀揆揣揉插揶揄搖搴搆搓搦搶攝搗搨搏摧摯摶摎攪撕撓撥撩撈撼據擒擅擇撻擘擂擱擧舉擠擡抬擣擯攬擶擴擲擺攀擽攘攜攅攤攣攫攴攵攷收攸畋效敖敕敍敘敞敝敲數斂斃變斛斟斫斷旃旆旁旄旌旒旛旙无旡旱杲昊昃旻杳昵昶昴昜晏晄晉晁晞晝晤晧晨晟晢晰暃暈暎暉暄暘暝曁暹曉暾暼曄暸曖曚曠昿曦曩曰曵曷朏朖朞朦朧霸朮朿朶杁朸朷杆杞杠杙杣杤枉杰枩杼杪枌枋枦枡枅枷柯枴柬枳柩枸柤柞柝柢柮枹柎柆柧檜栞框栩桀桍栲桎梳栫桙档桷桿梟梏梭梔條梛梃檮梹桴梵梠梺椏梍桾椁棊椈棘椢椦棡椌棍棔棧棕椶椒椄棗棣椥棹棠棯椨椪椚椣椡棆楹楷楜楸楫楔楾楮椹楴椽楙椰楡楞楝榁楪榲榮槐榿槁槓榾槎寨槊槝榻槃榧樮榑榠榜榕榴槞槨樂樛槿權槹槲槧樅榱樞槭樔槫樊樒櫁樣樓橄樌橲樶橸橇橢橙橦橈樸樢檐檍檠檄檢檣檗蘗檻櫃櫂檸檳檬櫞櫑櫟檪櫚櫪櫻欅蘖櫺欒欖鬱欟欸欷盜欹飮歇歃歉歐歙歔歛歟歡歸歹歿殀殄殃殍殘殕殞殤殪殫殯殲殱殳殷殼毆毋毓毟毬毫毳毯麾氈氓气氛氤氣汞汕汢汪沂沍沚沁沛汾汨汳沒沐泄泱泓沽泗泅泝沮沱沾沺泛泯泙泪洟衍洶洫洽洸洙洵洳洒洌浣涓浤浚浹浙涎涕濤涅淹渕渊涵淇淦涸淆淬淞淌淨淒淅淺淙淤淕淪淮渭湮渮渙湲湟渾渣湫渫湶湍渟湃渺湎渤滿渝游溂溪溘滉溷滓溽溯滄溲滔滕溏溥滂溟潁漑灌滬滸滾漿滲漱滯漲滌漾漓滷澆潺潸澁澀潯潛濳潭澂潼潘澎澑濂潦澳澣澡澤澹濆澪濟濕濬濔濘濱濮濛瀉瀋濺瀑瀁瀏濾瀛瀚潴瀝瀘瀟瀰瀾瀲灑灣炙炒炯烱炬炸炳炮烟烋烝烙焉烽焜焙煥煕熈煦煢煌煖煬熏燻熄熕熨熬燗熹熾燒燉燔燎燠燬燧燵燼燹燿爍爐爛爨爭爬爰爲爻爼爿牀牆牋牘牴牾犂犁犇犒犖犢犧犹犲狃狆狄狎狒狢狠狡狹狷倏猗猊猜猖猝猴猯猩猥猾獎獏默獗獪獨獰獸獵獻獺珈玳珎玻珀珥珮珞璢琅瑯琥珸琲琺瑕琿瑟瑙瑁瑜瑩瑰瑣瑪瑶瑾璋璞璧瓊瓏瓔珱瓠瓣瓧瓩瓮瓲瓰瓱瓸瓷甄甃甅甌甎甍甕甓甞甦甬甼畄畍畊畉畛畆畚畩畤畧畫畭畸當疆疇畴疊疉疂疔疚疝疥疣痂疳痃疵疽疸疼疱痍痊痒痙痣痞痾痿痼瘁痰痺痲痳瘋瘍瘉瘟瘧瘠瘡瘢瘤瘴瘰瘻癇癈癆癜癘癡癢癨癩癪癧癬癰癲癶癸發皀皃皈皋皎皖皓皙皚皰皴皸皹皺盂盍盖盒盞盡盥盧盪蘯盻眈眇眄眩眤眞眥眦眛眷眸睇睚睨睫睛睥睿睾睹瞎瞋瞑瞠瞞瞰瞶瞹瞿瞼瞽瞻矇矍矗矚矜矣矮矼砌砒礦砠礪硅碎硴碆硼碚碌碣碵碪碯磑磆磋磔碾碼磅磊磬磧磚磽磴礇礒礑礙礬礫祀祠祗祟祚祕祓祺祿禊禝禧齋禪禮禳禹禺秉秕秧秬秡秣稈稍稘稙稠稟禀稱稻稾稷穃穗穉穡穢穩龝穰穹穽窈窗窕窘窖窩竈窰窶竅竄窿邃竇竊竍竏竕竓站竚竝竡竢竦竭竰笂笏笊笆笳笘笙笞笵笨笶筐筺笄筍笋筌筅筵筥筴筧筰筱筬筮箝箘箟箍箜箚箋箒箏筝箙篋篁篌篏箴篆篝篩簑簔篦篥籠簀簇簓篳篷簗簍篶簣簧簪簟簷簫簽籌籃籔籏籀籐籘籟籤籖籥籬籵粃粐粤粭粢粫粡粨粳粲粱粮粹粽糀糅糂糘糒糜糢鬻糯糲糴糶糺紆紂紜紕紊絅絋紮紲紿紵絆絳絖絎絲絨絮絏絣經綉絛綏絽綛綺綮綣綵緇綽綫總綢綯緜綸綟綰緘緝緤緞緻緲緡縅縊縣縡縒縱縟縉縋縢繆繦縻縵縹繃縷縲縺繧繝繖繞繙繚繹繪繩繼繻纃緕繽辮繿纈纉續纒纐纓纔纖纎纛纜缸缺罅罌罍罎罐网罕罔罘罟罠罨罩罧罸羂羆羃羈羇羌羔羞羝羚羣羯羲羹羮羶羸譱翅翆翊翕翔翡翦翩翳翹飜耆耄耋耒耘耙耜耡耨耿耻聊聆聒聘聚聟聢聨聳聲聰聶聹聽聿肄肆肅肛肓肚肭冐肬胛胥胙胝胄胚胖脉胯胱脛脩脣脯腋隋腆脾腓腑胼腱腮腥腦腴膃膈膊膀膂膠膕膤膣腟膓膩膰膵膾膸膽臀臂膺臉臍臑臙臘臈臚臟臠臧臺臻臾舁舂舅與舊舍舐舖舩舫舸舳艀艙艘艝艚艟艤艢艨艪艫舮艱艷艸艾芍芒芫芟芻芬苡苣苟苒苴苳苺莓范苻苹苞茆苜茉苙茵茴茖茲茱荀茹荐荅茯茫茗茘莅莚莪莟莢莖茣莎莇莊荼莵荳荵莠莉莨菴萓菫菎菽萃菘萋菁菷萇菠菲萍萢萠莽萸蔆菻葭萪萼蕚蒄葷葫蒭葮蒂葩葆萬葯葹萵蓊葢蒹蒿蒟蓙蓍蒻蓚蓐蓁蓆蓖蒡蔡蓿蓴蔗蔘蔬蔟蔕蔔蓼蕀蕣蕘蕈蕁蘂蕋蕕薀薤薈薑薊薨蕭薔薛藪薇薜蕷蕾薐藉薺藏薹藐藕藝藥藜藹蘊蘓蘋藾藺蘆蘢蘚蘰蘿虍乕虔號虧虱蚓蚣蚩蚪蚋蚌蚶蚯蛄蛆蚰蛉蠣蚫蛔蛞蛩蛬蛟蛛蛯蜒蜆蜈蜀蜃蛻蜑蜉蜍蛹蜊蜴蜿蜷蜻蜥蜩蜚蝠蝟蝸蝌蝎蝴蝗蝨蝮蝙蝓蝣蝪蠅螢螟螂螯蟋螽蟀蟐雖螫蟄螳蟇蟆螻蟯蟲蟠蠏蠍蟾蟶蟷蠎蟒蠑蠖蠕蠢蠡蠱蠶蠹蠧蠻衄衂衒衙衞衢衫袁衾袞衵衽袵衲袂袗袒袮袙袢袍袤袰袿袱裃裄裔裘裙裝裹褂裼裴裨裲褄褌褊褓襃褞褥褪褫襁襄褻褶褸襌褝襠襞襦襤襭襪襯襴襷襾覃覈覊覓覘覡覩覦覬覯覲覺覽覿觀觚觜觝觧觴觸訃訖訐訌訛訝訥訶詁詛詒詆詈詼詭詬詢誅誂誄誨誡誑誥誦誚誣諄諍諂諚諫諳諧諤諱謔諠諢諷諞諛謌謇謚諡謖謐謗謠謳鞫謦謫謾謨譁譌譏譎證譖譛譚譫譟譬譯譴譽讀讌讎讒讓讖讙讚谺豁谿豈豌豎豐豕豢豬豸豺貂貉貅貊貍貎貔豼貘戝貭貪貽貲貳貮貶賈賁賤賣賚賽賺賻贄贅贊贇贏贍贐齎贓賍贔贖赧赭赱赳趁趙跂趾趺跏跚跖跌跛跋跪跫跟跣跼踈踉跿踝踞踐踟蹂踵踰踴蹊蹇蹉蹌蹐蹈蹙蹤蹠踪蹣蹕蹶蹲蹼躁躇躅躄躋躊躓躑躔躙躪躡躬躰軆躱躾軅軈軋軛軣軼軻軫軾輊輅輕輒輙輓輜輟輛輌輦輳輻輹轅轂輾轌轉轆轎轗轜轢轣轤辜辟辣辭辯辷迚迥迢迪迯邇迴逅迹迺逑逕逡逍逞逖逋逧逶逵逹迸遏遐遑遒逎遉逾遖遘遞遨遯遶隨遲邂遽邁邀邊邉邏邨邯邱邵郢郤扈郛鄂鄒鄙鄲鄰酊酖酘酣酥酩酳酲醋醉醂醢醫醯醪醵醴醺釀釁釉釋釐釖釟釡釛釼釵釶鈞釿鈔鈬鈕鈑鉞鉗鉅鉉鉤鉈銕鈿鉋鉐銜銖銓銛鉚鋏銹銷鋩錏鋺鍄錮錙錢錚錣錺錵錻鍜鍠鍼鍮鍖鎰鎬鎭鎔鎹鏖鏗鏨鏥鏘鏃鏝鏐鏈鏤鐚鐔鐓鐃鐇鐐鐶鐫鐵鐡鐺鑁鑒鑄鑛鑠鑢鑞鑪鈩鑰鑵鑷鑽鑚鑼鑾钁鑿閂閇閊閔閖閘閙閠閨閧閭閼閻閹閾闊濶闃闍闌闕闔闖關闡闥闢阡阨阮阯陂陌陏陋陷陜陞陝陟陦陲陬隍隘隕隗險隧隱隲隰隴隶隸隹雎雋雉雍襍雜霍雕雹霄霆霈霓霎霑霏霖霙霤霪霰霹霽霾靄靆靈靂靉靜靠靤靦靨勒靫靱靹鞅靼鞁靺鞆鞋鞏鞐鞜鞨鞦鞣鞳鞴韃韆韈韋韜韭齏韲竟韶韵頏頌頸頤頡頷頽顆顏顋顫顯顰顱顴顳颪颯颱颶飄飃飆飩飫餃餉餒餔餘餡餝餞餤餠餬餮餽餾饂饉饅饐饋饑饒饌饕馗馘馥馭馮馼駟駛駝駘駑駭駮駱駲駻駸騁騏騅駢騙騫騷驅驂驀驃騾驕驍驛驗驟驢驥驤驩驫驪骭骰骼髀髏髑髓體髞髟髢髣髦髯髫髮髴髱髷髻鬆鬘鬚鬟鬢鬣鬥鬧鬨鬩鬪鬮鬯鬲魄魃魏魍魎魑魘魴鮓鮃鮑鮖鮗鮟鮠鮨鮴鯀鯊鮹鯆鯏鯑鯒鯣鯢鯤鯔鯡鰺鯲鯱鯰鰕鰔鰉鰓鰌鰆鰈鰒鰊鰄鰮鰛鰥鰤鰡鰰鱇鰲鱆鰾鱚鱠鱧鱶鱸鳧鳬鳰鴉鴈鳫鴃鴆鴪鴦鶯鴣鴟鵄鴕鴒鵁鴿鴾鵆鵈鵝鵞鵤鵑鵐鵙鵲鶉鶇鶫鵯鵺鶚鶤鶩鶲鷄鷁鶻鶸鶺鷆鷏鷂鷙鷓鷸鷦鷭鷯鷽鸚鸛鸞鹵鹹鹽麁麈麋麌麒麕麑麝麥麩麸麪麭靡黌黎黏黐黔黜點黝黠黥黨黯黴黶黷黹黻黼黽鼇鼈皷鼕鼡鼬鼾齊齒齔齣齟齠齡齦齧齬齪齷齲齶龕龜龠堯槇遙瑤\u0000─━│┃┄┅┆┇┈┉┊┋┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ㍉㌔\u0000㍍\u0000㌧\u0000㌶㍑\u0000㌍㌦\u0000㌫㍊\u0000㎜㎝㎞㎎㎏㏄㎡〝〟№㏍\u0000㊤㊥㊦㊧㊨㈱㈲㈹㍾㍽㍼∮∑\u0000\u0000\u0000∟⊿\u0000\u0000啞\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000焰\u0000鷗\u0000\u0000\u0000\u0000喝\u0000\u0000嚙㵎\u0000\u0000\u0000\u0000俠\u0000\u0000軀\u0000\u0000\u0000\u0000\u0000\u0000\u0000繫荆\u0000\u0000\u0000\u0000鹼\u0000\u0000昻\u0000麴\u0000\u0000\u0000\u0000栅\u0000\u0000\u0000\u0000\u0000屢\u0000\u0000\u0000繡\u0000\u0000渚\u0000\u0000\u0000\u0000\u0000蔣醬\u0000\u0000\u0000\u0000\u0000\u0000\u0000蟬\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000搔\u0000\u0000驒\u0000\u0000\u0000\u0000琢\u0000\u0000\u0000\u0000\u0000\u0000簞\u0000\u0000\u0000\u0000\u0000\u0000塚摑\u0000\u0000溺塡顚\u0000\u0000\u0000\u0000\u0000禱\u0000瀆\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000囊\u0000\u0000\u0000剝\u0000潑醱\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000頻\u0000\u0000\u0000\u0000\u0000\u0000頰\u0000麵\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000萊遼漣煉蓮\u0000蠟\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000屛\u0000\u0000\u0000\u0000攢\u0000\u0000柺\u0000梎\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000蔾\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000睢\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000︑︒\u0000︳\u0000︱︲\u0000\u0000\u0000⁝⁚︵︶︹︺﹇﹈︷︸︿﹀︽︾﹁﹂﹃﹄︻︼\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ゔゕゖ\u0000\u0000噓\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000￤＇＂\u0000◁▷⇩⇧⇦⇨▢♧♡♤♢㎠㎢㎤㎥㎗ℓ㎘㎳㎲㎱㎰㎅㎆㎇㏋㎐㏔㎖㌢㌖㌘㌕㌃㌣㍗㍂㌹㌻㌀㌱㍇㌞㌪\u0000㍿℡☎〶〠\u0000\u0000\u0000⒈⒉⒊⒋⒌⒍⒎⒏⒐⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇㉑ⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵㉃㈽㈿㈴㈸㈳㈼㉂㈾㈶㈵㈻㉀㈺㊰㊭㊩㊯㊔㊪㊘㊫㊒㊑㊓㊬㊮㊖\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⎫⎬⎭\u0000⎧⎨⎩\u0000㏌㌅\u0000\u0000㎟㎣㎦\u0000\u0000㊞㎈㎉㏈∭\u0000㈰㈪㈫㈬㈭㈮㈯㈷㉁➡⬅⬆⬇◉♠♥♣♦☀☁☂☃☞☜☝☟㊙⓪ⅪⅫ\u0000\u0000\u0000▁▂▃▄▅▆▇█▏▎▍▌▋▊▉▔▕╭╮╰╯═╞╪╡◢◣◥◤\u0000\u0000╱╲╳\u0000\u0000\u0000\u0000︐\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000凜熙❶❷❸❹❺❻❼❽❾\u0000\u0000\u0000ⅺⅻ\u0000\u0000\u0000ⅿℊ℉\u0000℻〄⇆⇄⇅\u0000ヷヸヹヺ\u0000\u0000㊝\u0000\u0000\u0000㍻\u0000\u0000\u0000㌳㍎\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000纊褜鍈銈蓜俉炻昱棈鋹曻彅⼁仡仼伀伃伹佖侒侊侚侔俍偀倢俿倞偆偰偂傔僴僘兊兤冝冾凬刕劜劦勀勛匀\u0000匤卲厓厲叝﨎咜咊咩哿喆坙坥垬埈埇﨏\u0000增墲夋奓奛奝奣妤妺孖寀甯寘\u0000尞岦岺峵崧嵓\u0000嵂嵭嶸嶹巐弡弴彧德忞恝悅悊惞惕愠惲愑愷愰憘戓抦揵摠撝擎敎昀昕昉昮\u0000昤晥晗晙晴晳暙暠暲暿曺朎\u0000杦枻桒柀\u0000桄棏﨓楨﨔榘槢樰橫橆橳橾櫢櫤毖氿汜沆汯泚洄涇浯涖涬淏淸淲淼渹湜渧渼溿澈澵濵瀅瀇瀨炅炫焏焄煜煆煇\u0000燁燾犱犾猤猪獷玽珉珖珣珒琇珵琦琪琩琮\u0000璉璟甁畯皂皜皞皛皦益睆劯砡硎硤硺礰礼神祥禔福禛竑竧靖竫箞精絈\u0000綷綠緖繒罇羡羽茁荢荿菇菶葈蒴蕓蕙蕫﨟薰蘒﨡蠇裵訒訷詹誧誾諟諸諶譓譿賰賴贒赶﨣軏\u0000逸遧郞都鄕鄧釚釗釞釭釮釤釥鈆鈐鈊鈺鉀鈼鉎鉙鉑鈹鉧銧鉷鉸鋧鋗鋙鋐﨧鋕鋠鋓錥錡鋻﨨錞鋿錝錂鍰鍗鎤鏆鏞鏸鐱鑅鑈閒\u0000﨩隝隯霳霻靃靍靏⾭\u0000顗顥飯飼餧館馞驎髙髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000€Ω\u0000\u0000ﬀﬃﬄāīūēōĀĪŪĒŌ⅛⅜⅝⅞⅓⅔⁰⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ǍĚ\u0000ẼǏ\u0000ĨǑ\u0000ǓŮŨǎě\u0000ẽǐ\u0000ĩǒ\u0000ǔůũɑάὰǽ\u0000ɔ\u0000\u0000ə\u0000\u0000ɚ\u0000\u0000ɛέὲȷŋɵʌ\u0000\u0000ʒʃː\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⅖⅗⅘⅙⅚\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㉜㉝㉞㉟㊱㊲㊳㊴㊵㊶㊷㊸㊹㊺㊻㊼㊽㊾㊿\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏ\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㋐㋑㋒㋓㋔㋕㋖㋗㋘㋙㋚㋛㋜㋝㋞㋟㋠㋡㋢㋣㋤㋥㋦㋧㋨㋩㋪㋫㋬㋭㋮㋯㋰㋱㋲㋳㋴㋵㋶㋷㋸㋹㋺㋻㋼㋽㋾\u0000㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㊐㊊㊋㊌㊍㊎㊏\u0000㊟\u0000\u0000\u0000\u0000\u0000\u0000㊠㊡㊛㊚㊣㊢㊗\u0000㊜㊕\u0000\u0000\u0000\u0000\u0000\u0000◌⓿\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⃞\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㏚\u0000\u0000\u0000℀㏂\u0000\u0000℅\u0000㍱\u0000\u0000㎍㎛\u0000\u0000\u0000㏗㏘\u0000\u0000\u0000㌁㌂㌄㌆\u0000㌈\u0000㌇㌊\u0000㌉\u0000㌋\u0000㌌㌎㌏㌐㌑㌒㌓\u0000㌗\u0000㌙\u0000㌚㌛㌜㌝㌟㌠㌡㌤\u0000㌥\u0000\u0000㌨㌩\u0000㌭\u0000\u0000㌮㌯㌰㌲\u0000\u0000㌴㌵㌼\u0000\u0000\u0000㌷\u0000㌸㌺㌽㍁㌾㌿㍀㍃㍄㍅㍆㍈㍋㍌㍏㍐\u0000\u0000㍒㍔\u0000\u0000㍓㍕㍖\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ℵϐ∊ℏ\u0000ϕϛϑ\u0000♨♩♬\u0000\u0000\u0000\u0000\u0000〻\u0000〳〴〵‼⁉\u0000\u0000\u0000\u0000\u0000∓\u0000≃≲≳\u0000\u0000\u0000\u0000\u0000\u0000〘〙｟｠\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⎛⎝⎞⎠\u0000\u0000\u0000\u0000⎡⎣⎤⎦\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⎜\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000✂\u0000\u0000〽\u0000ゟ\u0000\u0000∅⊠⊖⊘⊕⊗\u0000\u0000⚠\u0000◀▶\u0000\u0000\u0000\u0000⇐↔↘↙↖↗⇌⇋\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000〰⌇\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000❀✿\u0000\u0000\u0000\u0000\u0000\u0000\u0000▫\u0000▪\u0000✚\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000◦\u0000\u0000\u0000\u0000❖\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000﹅﹆\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000逸謁緣⿈溫禍悔海慨槪渴褐漢器既祈虛響勤謹揭擊硏穀殺祉視煮社者臭祝暑署涉狀\u0000\u0000節祖僧層巢憎贈卽嘆著徵懲\u0000禎\u0000突難梅繁晚卑碑賓敏侮\u0000塀勉步墨每免戾祐欄隆虜淚類曆歷練鍊\u0000錄\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000貟⻗⺽\u0000\u0000\u0000\u0000\u0000銳閱\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000杮⻆\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㐂\u0000\u0000旣\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000强\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺩\u0000俱\u0000\u0000\u0000\u0000\u0000\u0000\u0000契\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺼\u0000\u0000\u0000权\u0000\u0000\u0000\u0000訁戶\u0000\u0000吳娛\u0000\u0000\u0000抅\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000吿\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000歲\u0000\u0000\u0000\u0000產䬸\u0000\u0000巿\u0000\u0000\u0000\u0000\u0000\u0000\u0000玺\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺌⺍尙\u0000\u0000\u0000\u0000宂\u0000\u0000\u0000\u0000\u0000\u0000⻝⻟⻞㞍\u0000⺗\u0000\u0000\u0000⺅\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㔟\u0000\u0000\u0000\u0000⻃\u0000\u0000\u0000\u0000稅\u0000\u0000\u0000\u0000說\u0000絕\u0000澘\u0000\u0000\u0000\u0000\u0000\u0000\u0000揷瘦\u0000\u0000\u0000\u0000⻊\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㐧\u0000\u0000脫\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺮\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000圡\u0000\u0000\u0000糖\u0000\u0000\u0000\u0000\u0000\u0000\u0000吞㮈內\u0000\u0000\u0000\u0000寧\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000丷\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺪彥姬\u0000\u0000庙\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㑨龴\u0000\u0000\u0000\u0000\u0000\u0000\u0000勐\u0000\u0000\u0000\u0000门\u0000\u0000\u0000\u0000栁\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⺷\u0000\u0000\u0000\u0000躶蘭\u0000\u0000\u0000旅\u0000\u0000\u0000\u0000\u0000类廉\u0000連\u0000⺹\u0000\u0000\u0000\u0000\u0000⺇\u0000\u0000\u0000\u0000⺋\u0000\u0000\u0000\u0000呕\u0000夹\u0000\u0000孶\u0000尔㟢峦\u0000么\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000挛\u0000\u0000晣\u0000\u0000\u0000\u0000槶榆\u0000\u0000\u0000毌\u0000渗\u0000\u0000沪\u0000\u0000\u0000⺦\u0000\u0000瓯畵痬癎㾱睪瞩\u0000\u0000\u0000\u0000\u0000\u0000筓\u0000\u0000䉤\u0000\u0000\u0000\u0000\u0000\u0000繈\u0000\u0000\u0000\u0000\u0000⺳\u0000\u0000\u0000\u0000腁䑓\u0000⺾⺿⻀\u0000兹荚\u0000\u0000\u0000䔥\u0000藴\u0000\u0000\u0000\u0000\u0000虽\u0000㐮裆\u0000\u0000\u0000\u0000\u0000\u0000䟦\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000迈\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000頹\u0000\u0000\u0000\u0000\u0000\u0000騈\u0000\u0000\u0000\u0000鯟\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000厉\u0000﨑\u0000\u0000\u0000\u0000\u0000丄丅丟丫丯丰乀乁乄⺃乿亍亖亹仐仠份仿伋伕你伻佉佔佺佽佾侗侾俏俽倀倁倐倛倧倮偗偦偪倻傏傖傜僌僦僩僯儈儋儐儛儞兟冡冼\u0000凮凴刁⺉刓剉剡剦劓勈勰匊匋匾卌卋卡卬厫叚另叵吧呍呦呫呴咍咖咡咭咹咿哆响唎唫唵啊啠\u0000喈喎嘈嘎嘏嘷嘿噉噋噏噦噩噯噱噲嚕嚚嚬嚭嚱囉囝囤圊圕圣圯圳圴坌坰垌垜垸埦埭埵埶埿堉堠堲塼墀墩壎壐壔壚壩夌夤夯奡奭姊姒姝姣姤娄娌娣婇婕婣婭婾媞媧媬媳嫠嬀嬙嬥嬭孁孼孾孿宊⺏尫尰屣屩屼峋峒峴崤崦嵃嵆嵊嶒嶔嶙嶠巘巠巸帀帒帔帕帘帮幘幫幬庨庪庾庿\u0000廒弇弎弜弝弢弨弶弻彀⼹彘彤徉徜徧徤徯徸⺖忉忡忩忭忼怗怚怳恡恿悞悤悰惋惛惸愒愓愔愜慼憍憟憨懂懟戕戩扃扆⺘扑扖拄拼挊挍挘挹捂捃捥捴捽掄掇掐掞揑揜搉搐搢摔摛摭摻撾撿擥擷擻攄攖攙敇敧斁斅旂旰旲昬晌晛晜晡晫\u0000暤曈曬朅朓朳杈杌杶杻枰枲柹柗柙柰栬栰栱桛桲桵桺梄梥梲棐棖棨棭棰棱棼椑椓椵椻楗楣楲楿榀榦榭榷槖槗樁樏樕樨樴樾橅橐橑橖橛檃檉檑檝檞檟櫜櫧櫬欞欤欵歆歖歠殂殾毡毱氐氳⺡⺢汙汶汻沅沕沜泐泔泖泠泫泬泮洊洎洑洮浗浞浥涂涿淄淊淖淩渢湑滇滊滎滽漚漪漯漳潚潞潢潽澋澍澒澔澚澧澨澶濚濞\u0000瀹瀼\u0000灔灝灞灤⺣灾炁炕炷烓烔烘烜焇焠焱煊煒煠煹熒\u0000燋燓燖爀爝爫爸牁牓牕牖牜犍⺨犴狇狻猄猅猨猱獃獬獼玃玅玆玕玞玟玠玦玫玵玷玼珏珙珩珴珽琄琊琚琛琤琨琬琯琰琱琹瑄瑇瑋瑍瑑瑗瑦瑫瑱璀璅璆璇璐璘璜璠璣璨璫璵璿瓈瓚瓞畎畹疁疐⽧疓疴痤痹瘀瘊瘕瘖瘙瘞瘭瘵癃癋癥癭癯癱癴皤皥盅盌盬盼眴眶睜睟睠睲睽瞕瞪矦矰矴砆砢砭砮砰砵硨碞磈磌磎磤磠磡磲磷磻礱\u0000⺭礽祅祛祜禋禖禘⽱离秊秚稃稉稑稞稭稹穅穌穝\u0000穭穸窠窣窳窻窼竆笇笔笧笱筇筎筠筩筭筲箑箯篗篙簋簏簠簦簱簶籑籙籧籮籰粼粿糈糉糗糙糝糫紇紈紉紓紝紣絁絓絙絝絺綆綋綌緌緫緱緹縈縑縕縠繇繢繮繳纍纑纘罄罏⺫⺱罡羑羿翎翟翥翬翮翯翺耎耑耔耤耦耺耼聠聱聵肞肦肫胗胘脖脘脺腊腌膁膄膴臏臹舃舡舲舴艆艋艏芎芮芷芾苆苾荃荑荕莆莍莒莘莩莿菀菪萏萑葊葶蒨蒯蓀蓂蓰蓽蔌蔴蕞薏薷藎薭蘒蘩虒虣虬虯虺蚍蚑蚘蚧蚨蛺蛽蜋蜓蜙蜞蜨蜾蝱螈螙螬螭螵蟖蟫蟭蠁\u0000蠆蠋蠔蠜衖衟⻂袘袪袽袾裊裒裛裰裱褆褘褙褚褧褰褾襻觔觖觥觱訇訏訕訢詎詿諴謟謷譃譄譔讜讞豇豔豳貤賙賡賸賾贛赩赬趄趍趕趦跆跎跤跬踠蹋蹬蹰蹺躒躮躳軑軔軹輗輶辦⾡⻍\u0000迠迤迶适逬遄邈邕邙邛邢邴郗郝郴鄗鄜鄱鄺鄽酈酛酡酤醎醞醨醭醮醲醼釰釷釻鈇鈨鈳鈸鉃鉇鉏鉠鋂鋋鋌鋟錍錕錟錧鍇鍒\u0000鍪鍭鎛鎺鎩鏁鏊鏢鏺鏽鐏鐴鐿鑕鑫鑲⻒閦閩\u0000閴閽闚⻏陁陘隄隤隩雒\u0000雞雩雱霂霉靚靣靮靳鞚鞢鞵鞶韙韞韴頊頎頞頣頫頾顒顓顙顬颸颺颿飈飥餲餳饀饍饜饟馱馹馺駉騂騖騤騧騭騮騶騸驊驖骵骶髹鬃鬠鬳鬴魳魹鮧鯁鯇鯗鯧鯫鯷鯺鯽鰋鰧鰪鰶鱁鱓鱣鱰鱷鴂鵂鵇鵣鵩鵼鵾鶍鶱鷃鷇鷖鷟鷫鷴鸕鸝麤麨麬黧黮鼐鼒鼗鼙鼯鼷鼹齁齅齗齨齱齵龐龔龢\u0000㐅\u0000嘠廋⺕\u0000\u0000\u0000濹滦熳⺤\u0000\u0000\u0000\u0000⻌\u0000嶲\u0000俓僙僰凃噶橔洁淐湂滙珤琡畬硑蟵\u0000玨㫳㓛䐌㺊\u0000龽䯨龼㻚㬢龾䕺䂓\u0000䙥䄃䊓䚮㒈\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⊄⊅⊊⊋∉\u0000⌅⌆\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000∥∦\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000≢\u0000≅≈≶≷\u0000\u0000\u0000\u0000℧\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⋚⋛⅕⌘ḾḿǸǹǖǘǚǜĄ˘ĽŚŞŤŹŻą˛ľśˇşťź˝żŔĂĹĆČĘĎŃŇŐŘŰŢŕăĺćčęďđńňőřűţ˙ĈĜĤĴŜŬĉĝĥĵŝŭɱʋɾɬɮɹʈɖɳɽʂʐɻɭɟɲʝʎɡɰʁħʕʔɦʘǂɓɗʄɠƓɨʉɘɜɞɐɯʊɤɒʍɥʢʡɕʑɺɧ͡ˈˌˑ‿̏˥˦˧˨˩\u0000\u0000̥̬̹̜̟̠̩̯̽˞̴̤̰̼̝̞̘̙̪̺̻̚\u0000\u0000\u0000ɢɣɪɴɶɸʀʏʙʜʟʰʲʷˁˠˡ\u0000\u0000\u0000\u0000\u0000\u0000⊞\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000〼ヿ\u0000〖〗♮♫⤴⤵⦿\u0000゠\u0000⧺⧻\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ς⓵⓶⓷⓸⓹⓺⓻⓼⓽⓾☖☗▱ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹ\u0000ㇺㇻㇼㇽㇾㇿ⎾⎿⏀⏁⏂⏃⏄⏅⏆⏇⏈⏉⏊⏋⏌\u0000\u0000✓\u0000␣⏎◐◑◒◓⁇⁈\u0000⁑⁂㆐㆑㆒㆓㆔㆕㆖㆗㆘㆙㆚㆛㆜㆝㆞㆟\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⎰⎱♲♳♴♵♶♷♸♹♺♻♼♽゙゚⃝\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000佈佟佪佬倎倘偁僲僐儆儃儵兕兗㒵凊凢剗勌勖勻匜卣厝吒呿咈啐喁喭嗎嘻嚞嚩嚳坷坼\u0000埏埤塤墉\u0000壒壠虁妋妒姃娓婧婷媄嫄\u0000孽宓尒屮\u0000屺岏岟岣岪峐\u0000崍嵇嶁嶤嶧巋幞廹开异弣弽彔彽怍怔怘怵恇悝惔惝愫憼憹戢扚扯拖捼揥摹擄擐攩斝昺昢昫昰昳晈\u0000晷晸暍暻曛曨杇极枓枘枛柼栝梣椊楉\u0000楂楤榥槏㮶㯃槩槵\u0000樻\u0000檔檥㰏欛欬歧殩殭毗毿氅汴沘泻泆洱洹洿浘涔涪淛淝湄湞溱滁漐潙潡潾澌澠澼濇濊濰灎灵炤烤焫焞焮煑煨熅熇熺燄爕㸿犛\u0000猧獐獦玢琫瑆瑢瑭璦璩瓉瓿甗㽲痎瘂瘈癤皁皝皪皶盎盔盦盱眊眙睍睎睺瞀瞔矠\u0000硃确碰\u0000碭礀礜礮礴祆祹秈\u0000秔秞秫秭窅\u0000竎竽笒笭笻筯簁簳\u0000籭籹粏粔粠糕紱絜綃綦緂縨羗翛耵耷胊胠胳腠腧腨腭膻臊臗䑛艠艴\u0000芡芣芤芩芿苕苽茀茢茭茺荇荽莧菏菑菡萁萆葟葰葳蒅蒞蒺\u0000蔲蔞蔯蕤蕺薌薢藋藭藿蘄蘅蘐\u0000蘘蘸虗虢䖝虵蚸蛼螇䗪蠊蠐裎\u0000褲褹襀覔觶詇詝詡詵諐譆譙譩讝豉豨趯跑跗踣踽蹻\u0000䡄軺輞輭轔\u0000迨迮逈逭邗邳邾郄郅郇郯鄔鄖鄢鄣鄯鄴醃釱鍉鍤鍥鎣鏟鐄鐳鑊鑣鑱閎閟閬閶闋闐闓䦰闞隥雯靎鞕鞮鞺韁韉韛顖飧饘騃髁髃髎髖鬂鬈䰗鬭魞魦鮄鮊鮞鯎鯥鯸鰣鱏鱐鱥鴝鴞鵃鵒鶊鶖鷀鶬鶼\u0000鷧鸇麞麯龗\u0000丂丏丒丩丮乇\u0000乑㐆\u0000乩亝㐬亼仃仈仫仚仱仵伖佤伷伾佘\u0000佷佸侂侅俦侲俅俋俒㑪俲倓倜偎偓偣傣傈傒傓傕傪\u0000傱傺傻僄僇僳\u0000僎\u0000僔僡㒒\u0000儗\u0000兠\u0000关冃冋㒼冘冣冭㓇\u0000凳划刖\u0000剕剜剬剷劄劂\u0000劘\u0000劤劺劻勊勑\u0000勷匵卂\u0000\u0000卧卺厤厴\u0000厷叀\u0000㕝㕞叕㕣叴吤吨㕮呃呢呬咕咠咦咮咷咺哃\u0000哬哯哱哳唀唁唉唼啁㖦啇㖨啤\u0000啽喂喑㗅嗒\u0000\u0000喿嗉嗌嗑嗝㗚嗢\u0000嗩嘨\u0000嘇嘐嘰㗴嘽噀噇噞噠噭㘅嚈嚌嚝嚨嚲囅囍囟囨囶囷\u0000\u0000圩\u0000坅坆坍\u0000坨坯坳坴坵坻\u0000\u0000垚垝垞垨埗\u0000埌\u0000\u0000埞埰㙊埸埻埽堄堞堧堹\u0000塉塌塧墊墋墍墏墐墔墝墪墱\u0000壃壍壢壳壴夅夆复夔\u0000㚑夽㚙奆㚖\u0000奟\u0000奵奶奼妟妮妼姈姍姞姧姮\u0000\u0000㛏娍娗娧娭婥婺媋媜媟媠媢媱媵媺媿嫚嫜嫥嫰嫮嫵嬈嬗嬴孌孒孨孯宁宄\u0000宖宬㝡㝢寎寖㝬㝫寱寽㝵尃尩\u0000屟屧屨屰\u0000\u0000\u0000\u0000岈岊㟁\u0000\u0000岠岢岧\u0000岭岵\u0000峉\u0000\u0000崆崐崫崝崠崱崹㟨嵡嵪㟴嵰\u0000㟽嶈㠀嶗嶰嶴\u0000巑巗\u0000巤巩㠯㠶㡀帟帾幉㡜幖㡡幭幮\u0000庥庬庹廆廙\u0000廽弈\u0000弞彇彣彲彾徏徢忇忋忒忓忔忢忮忯忳㤗怢怤㤚恌悕您\u0000悱悾惈惙惮惵愐愙愞愺㥯慁慆慠\u0000憒憓憗憥憭\u0000懕懝懵\u0000戣扒扡扤扻扭扳抙拕\u0000拽挃挐\u0000\u0000挲挵挻挼捁捄捎\u0000捙\u0000\u0000捬掙\u0000掔掽揔揕揠揫揬揲搞搥搩搯摚摝摳摽撇撑撟擋擌擕擗\u0000擤擿㩮攏攔㩳攞攲敄敔敫敺斄斊斲斵斸斿旉旔㫖旹旼昄昈昡昪晅晑晎㫪\u0000\u0000\u0000晪晬晭晻暀暐暒㬎暭暱暵㬚㬜㫗朁朒\u0000朙\u0000\u0000杍杔杝\u0000\u0000\u0000杴\u0000枒\u0000荣栐柃柈柒柛柷\u0000\u0000\u0000栘栟栭\u0000栳栻栾桅桉桌桕桗㭷桫桮桼梂梐梖㭭梘梙梚梜梪梫梴梻棻\u0000\u0000棃棅棌棙棤棥棬棷椃椇㮇\u0000㮍楆楩楬楺榒㮤榖榰榺榼槀槑\u0000\u0000\u0000槣槮槯槳㯍槴槾樑樚樝\u0000樲樳樿橉橺橎橒橤\u0000檋㯰檡\u0000檫檽櫆櫔櫐櫝\u0000\u0000櫱櫲櫳櫽\u0000欋欏欐欑\u0000欗㰦欯歊歘歬歵⺞殁殛殮\u0000殽毇毈毉毚毦毧毮氂氊氎氶\u0000汍汛汭沄沉㳃沔沗沭泂㳒泜泩泭\u0000洀洤洦洧汧洯洼浛浠浰涀涁涊涍涑涘\u0000\u0000\u0000\u0000涫涮涴淂洴淈淎淟淶渶渞㴑渲湈湉湋湌湏湓湔湗湣㴞溓溧溴滃漵滫滹滻漊漌漘漥漶漼\u0000潒潗潠潨澐澖澾澟澥澯㵤濈濉濩\u0000濼瀀瀊瀣\u0000瀺灃灇灋㶚灥灩灮灶炆炗\u0000炟炱\u0000烬烊烑焃焆焈焌㷀焯煐煓煞㷔熖熀熛熠熢熮熯\u0000燙燜爇㸅爴爹牂牗牣\u0000牮牯牸牿犎\u0000犮犰狁㹠狌㹦㹨狳狺猇猒猘猙㺃猹猬猳猽獒㺔獫\u0000獮獯獱玁玊玔玘玜玥玹玿珅珋珡珧珹琓珺琁瑓瑀瑃瑒瑝璁璈\u0000璒璗璙璡璥璪璹璻璺瓖瓘瓫\u0000瓺\u0000甠甤甪㽗\u0000甽甾畀畈畐畒畲畱畺畽畾疌㽵疢㽷疰疷疿痀痆痏痓痝痟痠痧痮痱瘃瘘瘇瘏㾮\u0000瘓瘛瘜\u0000瘥瘨瘼瘳\u0000㿉癁\u0000癉癕㿗癮皕皡皠皧皨皯\u0000盉\u0000盨\u0000眗眚眭眵\u0000䀹\u0000\u0000睘\u0000睼\u0000䁘瞚瞟瞢瞤矞矟矤矪矬矻\u0000砅砉砍砙砬硇硪\u0000碊碔碤碝碟碻磕磦磹磺磾\u0000礐礛礥祊祘䄅祧祲禕禡禩禴秂秇秌种秖䅈\u0000\u0000䅏稊稕稛䅣稸穇穖穙穜穟穧穪穵窂窊窐窬\u0000䆴窹窾䆿竌竨竴\u0000\u0000\u0000笽笪笮笯䇦䇳筿筁䇮筕筹筤筦筳\u0000䈇箐箛䈎箵箼篅篊\u0000\u0000篔篖篚篪篰簃簎籅籊籗籞籡籩籯\u0000\u0000\u0000粦\u0000粶粷\u0000糄\u0000糍\u0000\u0000糦\u0000糵紃䋆紒紞\u0000\u0000紽紾絀絇\u0000\u0000䋖絚絪絰䋝絿\u0000綈綗\u0000綝綧綪綶緀緗緙緦䌂\u0000縉縐縗縝縧縬繅繵繾纆纇䌫纚䍃缼缻缾罃㓁\u0000\u0000罣罤罭罽罾羐养\u0000羖羜羭\u0000翃翏翣翲耊耈耖耬耰聃聦聻肙肜肤肧肸\u0000胅胕胦脍胵胻䏮脵脞䏰脤脧脬\u0000脽䐈腩䐗䐜膅䐢膘膲臁臃臖臛\u0000臤\u0000臬臽臿\u0000舄\u0000舙舢\u0000舼艉艅\u0000䑶䑺艗\u0000艜艣\u0000䒑艽艿芃芊芓芧芨芲芴芺芼苢苨苷茇茈茌荔茛茝茰茼荄荗䒾䓔䒳莔莕莛莝菉菐菔菝菥菹萕\u0000萗萹葏葑葒葙葚葜\u0000葥葸葼蒁䔍蒗蒦蒾䔈蓎蓏蓓\u0000蓧蓪蓯蓱蓺蔛蔤蔥蔫蕏蕯䕃蕑蕡蕢\u0000蕻蕽蕿薁薆薓薝薟\u0000\u0000\u0000薼藇藊藘藙藟藡藦藶蘀蘑蘞蘡蘤蘧\u0000蘹蘼\u0000虀虓虖虷蚇蚉蚜蚝蚱蚳蛁蛃蛑蛕蛗蛣蛦䖸蜅蜇蜎蜐蜟蜡蜣蜱蜺蝀蝃蝑蝘蝤蝥蝲蝼\u0000\u0000螧螉螋螓螠\u0000䗥螾\u0000蟁蟎蟟\u0000蟣蟥蟦蟪蠓蠨蠮蠲蠼䘏衊衘\u0000\u0000衩\u0000衯袠袼裀\u0000裑裓䙁褁\u0000褷\u0000襂襅襉\u0000襢覉覐覟覰覷觘觫䚡觳觽觿䚯訑訔\u0000訡訵訾詅詍詘誮誐誷諗諼\u0000謊謅謍謜謭䜌譑譞譶讁讋讔讕谹\u0000谽\u0000\u0000豅豏豗豩豭\u0000貓貒貙䝤貛賖賕\u0000賱\u0000贉贎跈跙踌䟽跽踆\u0000踔踖踡踢踧\u0000䠖踶踹蹔蹢蹭蹯躘躞躵躻\u0000䡎\u0000輀輈輫轀轊轘\u0000辤辴\u0000迁迆﨤迊迍迓迕迱迵迻逌逷\u0000遃遝\u0000\u0000邅邌邐邡䢵邰邶郃郈\u0000郜郟\u0000郶郲鄀郫郾郿鄄鄆鄘鄞鄷鄹酆酇酗酙酴酹醅醳醶釃釄\u0000\u0000釬鈁鈖鈗\u0000鉂鉊鉖鉡鉥鉨\u0000鉼鉽鉿銉銍銗銙銟銫\u0000\u0000銲銿鋀鋆鋎鋥錑\u0000\u0000鋷錩\u0000\u0000鍑鍚鍫鍱鍳鎡\u0000\u0000鎈鎋鎏鎞鏵\u0000\u0000鏱鏇鏜鏧鐉鐖鐗鏻鐲鐻\u0000\u0000鑭鑯镹閆閌閍\u0000\u0000闈\u0000\u0000阬阳阴\u0000阼陡\u0000隂\u0000隚\u0000䧧隳隺隽䧺\u0000雘雚雝䨄霔霣䨩霶靁靇靗靛靪\u0000\u0000鞖鞞鞱鞲鞾韌韑韔韘韡韱頄頍頔頖䪼\u0000頲頳頥顇顦颫颭颰\u0000颷颻颼飂飇飋飡飣飪飰飱飳餈䬻\u0000餖餗\u0000餚餛餜\u0000餱餺餻餼饁饆饎饠馣馦馽馿駃駔駙駞\u0000駰駹駼騊騑騚騠騱驄驌驘䯂骯䯊骷䯒骹\u0000髆髐髒髕髠髥髩鬌鬐鬒鬖鬜鬫鬽䰠魋魣魥魫魬魶魷鮦鮬\u0000鮲鮸鮾鯳鯘鯝鯪鯯鯮\u0000\u0000\u0000鰖鰘鰙鰚鰝鰢鰩\u0000鰱鰷鱅鱜\u0000鱉鱊\u0000鱔鱘鱛鱝鱟鱩鱪鱫鱭鱮鱲鱵鱺鳦鳲鴋\u0000鴑鴗鴘\u0000䳄\u0000鴲䳑鵊鵟鵢\u0000\u0000鵳鵶鵷鶄鶙鶡鶿鶵鶹鶽鷉鷚鷠鷣䴇鸊鸂鸍鸜鹻\u0000麀麅麛\u0000麽\u0000黟黿鼂䵷鼃鼺鼽齆齓齕齘\u0000齝\u0000齩齭齰\u0000⺬㘔㢭㷌㿜䖾䘐䭾䰸䳡丌丣两乹仳伌伙伫伮伱侄侞侷倄倌偌偟偢偷傎傞傢僃僨僱僾儇儌儍儎儳儸兴冄冸冺凈减凑凓凔凘凟刅刦刨别刱刲刵刼剚剠剮剸剹劊劌勡勩勱匃匑匟匭匲匽卥卭卹卾厔厙厪厯厺叁叄叅叠吓吪吱吴吵呌咧咪咱咻哎哪哼唅唈唕唧唪唶啑啦喏喒喔喤喲嗃嗆嗓嗛嗬嗮嗱嗶嗸嘅嘍嘑嘒嘬嘵嘹噍噔嚅嚟嚦嚷囌囏囙囡囫园囱圇圌圚圛圝圬圮圽圾坟坫坭坺垃垗垮埕埧堍堦塍塏塟塭塿墁墘墼够夣奙她妗妯妳姟姱姸媲媸嫪嫶嬛嬝嬡嬸宷寗寠尟尪尬尶屙屜屭峝崁崴崽嵙嵾嶃巇巹帨帲帵幛幨幪幷庀庋庳庽廑廔廕彍徬忪怇恉恔恧悻惄惽愊愖愪愶慞慤慻慽慿憝憸懜懢懥懨戄戇戱戹戽扺抐抨拚拴挖挪挶捆捋捓捱捵捿掂掊掮掯揪揸揹搒搘搠搤搪搵搽搿摒摟摴撐撘撙撬撳擭擰攛攟攮敉敠斒斕斴斾旈旎旐旟晾暋暌暳曀曏朥朵杕枀枏枑枤枱枵枾栨梆棫棵椗椳椸楛楥榨榫榯槥槱橊橕橧橱檯櫈櫉欃欻欿歽歾殰毷毹氄氉氍氬汊汒汔汹沬沴泒浡浼涹淰湅湳湻湽溉溼滚滛漦漩漰澇澝澮澷瀍瀠灉炘炰烕烖煅熲燴爗爟牃牏牐牚牠牨牷犄狉狥狴猂猋猞猢猺猻獍獘獧瑲璯瓟瓤瓴瓻甖甡甿畞疙疤痁痄痌痗痜痡痯瘄瘌瘝瘲瘸癅癊癟皭皽盙盫盰盹眀眎眢眨眯眹眾睅睊睏睞睤睧睬瞄瞌瞍瞖瞧瞯瞷瞾矉矑矙矱砷硜硾碘碡碱碳磉磓礌礟礧礨礿祂祔祫祼禫秄秪稂稌稰稺穄窀窆窔窵窽竾笫筷箠箬箰篨篲篸篼篾簉簨簯籂籒籓籛籜籝籲籽粇粞粺糇糓糚紼絍綂綅綍綑綞綳綹緐緥緵緶縯縶繄繯繸纁缽罛罝罥罱罿羀羋羢翽翾翿耇耍耞耹肈肎胏胔胭胰胷胺胾脃脗脰腗腯腳膋膐膛膞臋臕臝臞臡臯臶舀舋舓舔舚舺艄艭芄芉芑芪芰苐苪苯苶荖荸菸菼葘蒓蒱蒽蓻蕆蕖蕝薅薘虂虆蛀蜔蜢蜮蜹蝝蝻螌螎螗螘螞螣螮螿蟉蟚蠘蠛蠭蠺衅衋衎衕衚衮袚袛袜裍裠裯褎褏褦褵襚襜襫襰襼覥覵覼觕詉詗詧詾誆誖誶諉諑諝諬諵謆謏謑譅譒譭譸譼譾讅讟豋豓豻貺賅賉賒賬賵賷贁贃贗贜赮趑趟趫趲跕跧跱跲跴踁踋踦踱蹀蹁蹍蹏蹜蹡蹩蹱蹵蹷躉躐躕躚躧躩躭軨軰輇輘輥輧輬輵輺轃轇轑轕辠辡辢辥逄逛逯遌遛遰遴遹邋邘邠邲邽郉郰鄅鄥酚酧酺醊醑醕醰醻醽釂釅鈀鈉鈣鉶銎銯銻銼鋁鋃鋅鋈錔錳錶鍘鍿鎂鎊鎻鏌鏦鏹鐂鐍鐎鐮鑌閈閡閿闆闉闑闒闠闤闦阤阱阸阽陔陴陻陿隁隃隉隖隮霃霛霡霢霨霱靧靶靽靿鞙鞟鞬鞹韍韠韯頇頦頮顢顣颴飅餂餑餕餵饈饔饞駡騌騐騣驁驑骽骾鬁鬉鬋鬍鬎鬙鬵魈魕魨鮀鮆鮐鮝鮰鮿鯈鯿鰂鰜鰵鱄鱖鱡鱨鴰鴽鵪鵻鷥鷩鷳鹺麂麃麄麰黤黰黲鼉鼏鼔鼛鼢鼦鼪鼫鼴齚齯龞龥\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㗞龿鿀鿁鿂\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㦤㦸\u0000\u0000\u0000㩜\u0000\u0000\u0000\u0000\u0000\u0000\u0000㫄㫋\u0000\u0000\u0000\u0000\u0000㪅\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㯳櫸\u0000\u0000\u0000\u0000\u0000㴱\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000㹀㢡\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000䜟\u0000\u0000\u0000\u0000\u0000䠞\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000鬝鬬倂凞匇寬廊昞朗灊凞啡氺穠\u0000蠃閫靕\u0000\u0000΄΅\u0000\u0000\u0000ĐĦĲĿŊŦĳĸŀŉŧĊĖĞĢĠİĮĶ\u0000ĻŅŖŲǗǛǙǕŴŶċėǵğġįķ\u0000ļņŗųŵŷ℮∆∏≤≥◊\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000ΆΈΉΊΪΌΎΫΏάέήίϊΐόύϋΰώЂЃЄЅІЇЈЉЊЋЌЎЏђѓєѕіїјљњћќўџ\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000⒑⒒\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000丵乜乣乨乴乵亗亯仛仢仨仯仾伂伈伒众伳伵佀佂佋佌佒佣佮佱佹侁侉侌侎侐侓侙侟侹侻侼侽俀俁俆俈俌俜俢俰俼倇倊倗倝倰倲倳倵偅偊偑偒偙偠偧偭偱傁傃傄傆傊傐傛傟傠傡傯傰傹傽僀僓僜僝僟僢僤僶僺\u0000儙儜儝儣儧儨儬儭儯儱儴儹兂兏兓兘兦兾冎冿凂凒凕凥凲凷刘刢剅剘剟劀劅劕劖劗劚劥劧劰劶劷劸劽勄勆勏勔勜勥勨勪勬勴勶匌匓匘匛匞匥匧匨匩匫匬匰匼卙卛\u0000厃厇厈厎厡厵厸厽叏叒叓叞\u0000叧吂吚吡启呄呇呏呞呤呧呩呭呮咁咃咅咉咑咟哊哠哶哾唌唍唲唻唽啉啍啘啚啛啿喓喗喣嗁嗋嗗嗘嗞嗿\u0000嘊嘙嘳嘼噁噃噄噆噡噢噣噵嚄嚋嚧嚫嚾囋囐囜囥囦囧圁圂圑圠圢圤圥圪圿坒坢坧坮坱坹坾垁垔垙垟垡垕垧垩垽埝埩埾堃堈埡堌堛堟堭堿塐塕塨塸墇墈墌墖墠墡墢墦壄壂壈壖壝壡\u0000夒夓夝夡夨夰夳夵夶夿奃奒奞奫奯奲奻妌妎妕妧妭妰妷姁姄姯姲姴姷娀娎娒娞娤娨娪娰婄婅婈婌婐婞婻媐媓媖媙媻嫆嫈嫏嫽嬁孋孞孮宆宎宐宑宔宨宩宭宯宱宲宺宼寁寍寏寙寚寯寴尌尗尦尮尲尵屚屴屵屻屽岇岒岝岲岴峗峮峱峲崒崣崿嵈嵕嵑嵟嵠嵢嵤嵹嵺嵿嶊嶓嶕嶛嶟嶫巃巎巙帇帍帠幋幐幑幜幰庎庢庤庱廌廎廜廞廥廫弆弙弤弫弬弮弰弿彄彛彠彯彴彵彸彺徍徖徝徫徰徱忈忐忑忨忬忲忶忺怊怓怟怭恀恈恑恖恗恱恾悂悆悈悎悑悓悘\u0000悢悥悷惂惉惊惎惏惢惥惼愂愇愌愗愢愱愵愹慅慉慬慲慸憀憁憃憄憋憜憠憪懀懁懎懏懞懡懧懩懬懭懯戁戃戜戠戧戫扂扄扐扔扜扽抍抎抏抳抶抷抺抾抿拎拪拲挄挋挓挩挭捊捒捔捘捛捦捭捸掕掚掤掦掭揁揅揈揎揓揳搊搰摋摏摓摜摡摣撅撏撛撡撣撦撨撽擉擑擩擪擵攁攈攉攊攓攦攱攺攼攽敃敐敒敟敽斘斠斣斦斮斳旖旘\u0000旴旵旾旿昍昑昒昖昝昣昦昩昹昷晀晆晊晘晠晵晿晹晼暚暛暜暟\u0000曂曃曌曎曔曟曫曮朇朜朠朢朾杅杬构枎枖枙枼枽柂柅柉柜柡柦柲柶栔栙栧栯栿桊桘桯桰桱桹桻梈梡梩梮棑棓棜棝棪棶棽椆椉椐椖椱楅楎楦楰楱楻榍榡榸槅槈\u0000樀樃樠樤樷\u0000橪檁檆檇檛檰檱檴檾檿櫌櫕櫖櫰櫼欂欆欇欉欨欫欶歍歒歝歫歮歰殅殗殟殠殢殣殨殬殸殹毃毄毣氒氙氟氦氧氨氮氻汋汏汫汸沇沟沰沲泍泏泑泧泲泴洇洏洓洚洨浟浧涒涗涷涽淠淢淥淯淴渀渄渻湒湝湢湨溍溙溠溭溮溳溻滀滈滍滏滭滮漄漈漍漖漛漻漭潏潓潝潬澃澓澦澰濅濨濽瀗瀯瀴瀷灄灈灕炔炖炛炴烺焅焋焭焸煁煋\u0000煗煚熌熚熰熿燀燌燚燸爈爉爓爚爤爯牅牎牞牫牱牻牼犉犓犨狕狖狘狟狾猍猓猲猵獖獝獞獟獠獩獹玀玎玐玓玗玪玭珆珌珓珝珦珷珻珿琀琑琭瑧瑨瑮璏璑璚璮璱璲瓌瓐瓓\u0000瓛瓨瓪\u0000瓼甆甒甧甩甶甹畃畇畗畟畡畻畼疅疕疜疺瘒瘣瘩瘹瘺癀癄癙皅皌皍皟皢皣盁盋\u0000盠盶眆眒眔眕眜眮眽睂睒睖睗睰睳睴\u0000\u0000瞮瞱瞵矃矒矕矸砎砑砝砣硄硈硌硒硞硠硡硣碏碨碬碲碽碿磇磒磖磛磟磪磳磶磿礆礚礞礠礩礭礵祄祋祏祑祩祻祾禌禑禓禜禨禯秏秝秠秢秥秱秸秼稇稡稧稫稯稴稵穈穕穥穾窋窑窞竉竛竩竬竱竻笟笣笩笰笴笿筀筪箄箉箎箖箥箲箶箺箻箽篂篈篛篴篵篹篺簂簄簆簌簙簛簥簬簴簹簺籆籕籚籣\u0000籼粆粰粻糏糔糩紏紑紖紦紪紭絑絗絥絧絸絻綁綖緃緄緅緆緍緎縀緢緪緭緺縜縭縳縿繎繐繘繟繥纕纝纞缿罜罦\u0000羍羏羦羪羴羼翀翈翨耏耓耝耟耠耮耴耾聀聄聤聭肁肹胈胍胒胮胲胶胹脋脜脠脼腅腇腒腡腷膆膎膖膢膮臅臎臫臰臱臲臵臸\u0000舏舝舨艃艎艑艖艧艻芀芁芇芔芖芘芚芛芠苚苠苤苭茊茋茞茟茡茬茮茳茷茽荂荍荎荰莀莂莄莙莜莦莬莾荓菨萙莭萯葅葇葍葖\u0000葠葤葧葪葴葽蒒蒕蒩蒪蓇蓈蓌蓲蓷蔂蔃蔇蔎蔐蔜蔢蔧蔪蔳蔶蔿蕐蕒蕜\u0000蕟蕠蕹薉薋薠薥薧薴薶薸薽薾薿藂藚藠藨藳藼蘍蘎蘙蘛蘶蘺蘽虘虙虝虠虡虤虩虶蚖蚚蚡蚦蚭蚴蚵蚷蚹蚿蛅蛒蛚蛜蛠蛥蛧蚈蜄蜏蜯蜲蜼蜽蝅蝍蝡蝯螃螄螅螆螐螕\u0000螱蟈蟊蟕蟙蟜蟢蟤蟱蟳蟸蟺蟿蠉蠙蠒蠚蠞蠰蠵衁衃衈衉\u0000衑衜衠衱衹衻袀袟袨袺裋裌裞裧裷褍褕褖褠褨褱褺襆襏襒襗襛襡襣襮襳襵襺襽覍覕覛覜覠覴覶觗觩觭觹訄訅訞訠訤訦訫訬訯訽詀詃詓詖詜詥詶詷詺詻誀誃誋誏誒誗誙誟誩誯誳誻諃諆諈諊諓諔諕諰諿謋謞謰謼譂譈譍譣譹讄讍讏谸谾豑豘豛豝豙豣豤豦豵豶豾貆貇貋貐\u0000貜貹賆賋賏賝賨賯賲賿赥赿趂趈趐趞趠趬趵趷趹趻跀跅跇跊跔跥跰趼踄踅踑踳踷踸蹎蹛蹝蹞蹹躂躃躛躝躢躺軁軃軄軇軜軮軱軷軭輂輏輐輖輠輡輣輨輮輴輷轁轏轒轓轝轞轥辝辸达迀迋运迒迣迾逘逨逩逪逳逴逿遢遦遬邎邥郌郕郘郙郥郒鄈鄍鄐鄚鄠鄩鄮鄶鄼酃酏酓酭酻醁醆醓醔醘醡醦醿釓釔釙釩釪釯釹釽鈄鈅鈌鈒鈓鈘鈜鈝鈤鈥鈦鈮鈯鈰鈵鈶鈾鉆鉍鉘鉜鉝鉩鉮鉯鉰鉵鉹鉻銊銒銠銤銥銨銶銸銺銽鋇鋍鋘鋜鋝鋡鋣鋨鋬鋮鋰錀錈錜錤錪錴錷鍐鍕鍞鍧鍩鍯鍴鍶鍺鍽鎀鎁鎍鎒鎕鎘\u0000鎦鎨鎫鎴鎵鎶鏄鏅鏉鏋鏍鏓鏙鏷鐁鐈鐕鐟鐯鐽鑃鑙鑜鑟鑡鑨鑮钄钃镾閄閝閞閺闙闝闟阞阢阥阦阷阹阺陒陖陗陮陼陾隑隟隦雊\u0000雟雺霅霚霝\u0000靊靘靷靸靻鞀鞉鞗鞸鞼鞿韄韅韇韊韎韐韗韝韤韷韸韺頙頜頠頯頵顄顊顑顪颮飌飦飶餇餟餢餦餫餴餹饇饙饛馛馝馟馰馲馵駓駚駜駧駪駫駬駴駵駽駾騄騋騞騢騳騵驇\u0000驋驔驝骪骬骮骲骴骻骿髈髗髛髤髧髬髲髳髵髺髽髿鬀鬄鬅鬛鬦\u0000鬷鬹鬺魌魖魗魛魡魪魭魮魸魿鮅鮇鮉鮋鮍鮔鮚鮩鮷鮼鯐鯹鰏鰑鰞鰦鰨鰽鱃鱎鱞鱻鳷鳹鴜鴯鴳鴴鴺鴼鵅鵓鵔鵥鶃鶆鶎鶒鶓鶕鶗鶘鶪鶮\u0000鷊鷔鷕鷞鷮鷰鷾鸎鸐鸑鸒鸖麇麎麏麖麘麮麳黆黈黋黕黬黭黱黵黸鼑鼖鼚鼟鼱鼲鼼鼿齃齄齇齖齞齮齳齺齽龏龑龒龖龡龣";
 /* ---------- PDF import (iOS 家計簿アプリの表形式PDF) ---------- */
@@ -296,11 +377,11 @@ function cellsToTable(cells){
 async function parsePDF(buf){var cells=await pdfCells(buf);return cells.length?cellsToTable(cells):null}
 </script>
 <script>
-(function(){
-'use strict';
+(function(){'use strict';
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
-var yen=function(n){return (n<0?'-':'')+'¥'+Math.round(Math.abs(n)).toLocaleString('ja-JP')};
+var yenN=function(n){return Math.round(Math.abs(n)).toLocaleString('ja-JP')};
+var yen=function(n){return (n<0?'-':'')+yenN(n)+'円'};
 var short=function(v){return v>=10000?(Math.round(v/1000)/10)+'万':String(v)};
 var YEAR=new Date().getFullYear();
 
@@ -365,7 +446,7 @@ function detectMap(h){
 /* ---------- state ---------- */
 var SAVE_RE=/(?<!非)(貯金|貯蓄)|積立|つみたて|NISA|iDeCo|投資信託|金融商品/i;
 var KEY='pfin-analyzer:v1';
-var S={cat:null,catAll:false,q:'',kind:'exp',sort:'big',lim:20,saved:false,future:false,futureN:0,allTx:[],raw:null,map:{},tx:[],info:{},sel:'all',sample:false};
+var S={tab:'sum',last3:[],catOrder:[],catIdx:{},pillCats:[],cat:null,catAll:false,q:'',kind:'exp',sort:'big',lim:20,saved:false,future:false,futureN:0,allTx:[],raw:null,map:{},tx:[],info:{},sel:'all',sample:false};
 
 function buildTx(){
   var h=S.raw.header,rows=S.raw.rows,m=S.map,tx=[],skipped=0,excluded=0,bad=0;
@@ -403,8 +484,10 @@ function applyFuture(){
   S.futureN=S.allTx.filter(function(t){return t.d>now}).length;
   S.tx=S.future?S.allTx:S.allTx.filter(function(t){return t.d<=now});
   S.info.n=S.tx.length;
-  if(S.sel!=='all'&&!S.tx.some(function(t){return t.ym===S.sel}))S.sel='all';
+  if(/^\d{4}-\d{2}$/.test(S.sel)&&!S.tx.some(function(t){return t.ym===S.sel}))S.sel='all';
+  S.last3=monthsOf(S.tx).slice(-3);recolor();
 }
+function selMatch(t){return S.sel==='all'||(S.sel==='r3'?S.last3.indexOf(t.ym)>=0:t.ym===S.sel)}
 function loadCSVText(text,label,isSample){
   var rows=parseCSV(text.replace(/^﻿/,''));
   if(rows.length<2){setStatus('データが見つかりませんでした。ヘッダー行と明細行のある CSV を選んでください。',true);return}
@@ -422,9 +505,10 @@ function loadTable(header,rows,label,isSample,saved){
   if(saved&&saved.m)S.map=saved.m;
   S.sample=!!isSample;S.sel='all';S.cat=null;S.catAll=false;S.q='';S.lim=20;S.future=!!(saved&&saved.f);
   buildTx();renderMap();
-  var up=$('#upBox');up.open=!!isSample;$('#upSum').textContent=isSample?'データを読み込む':'別のデータを読み込む';
+  $('#status').setAttribute('data-err','');
+  if(!isSample&&!saved)S.tab='sum';
   save();render();
-  if(!isSample&&!saved)setTimeout(function(){var st=$('#status');if(st.scrollIntoView)st.scrollIntoView({behavior:'smooth',block:'start'})},50);
+  if(!isSample){closeSheets();if(!saved)window.scrollTo(0,0)}
 }
 function save(){
   if(S.sample||!S.raw){S.saved=false;return}
@@ -437,7 +521,7 @@ function restore(){
   }catch(e){}
   return false;
 }
-function forget(){try{localStorage.removeItem(KEY)}catch(e){}S.saved=false;loadCSVText(sampleCSV(),'サンプル',true)}
+function forget(){try{localStorage.removeItem(KEY)}catch(e){}S.saved=false;closeSheets();loadCSVText(sampleCSV(),'サンプル',true)}
 function loadMemo(text){
   var lines=text.split(/\r?\n/),rows=[],lastDt=new Date(),bad=0;
   lines.forEach(function(line){
@@ -476,7 +560,7 @@ function readFile(f){
   };
   rd.readAsArrayBuffer(f);
 }
-function setStatus(msg,warn){var s=$('#status');s.innerHTML=msg?'<span class="pill'+(warn?' sample':'')+'">'+esc(msg)+'</span>':''}
+function setStatus(msg,warn){var s=$('#status');s.setAttribute('data-err',msg?'1':'');s.innerHTML=msg?'<span class="pill'+(warn?' sample':'')+'">'+esc(msg)+'</span>':''}
 
 /* ---------- mapping UI ---------- */
 function renderMap(){
@@ -498,7 +582,7 @@ function norm(s){return s.replace(/[0-9０-９\s\-\/()（）#*＊]+/g,'').toLowe
 
 function analyze(){
   var all=S.tx,months=monthsOf(all);
-  var cur=S.sel==='all'?all:all.filter(function(t){return t.ym===S.sel});
+  var cur=all.filter(selMatch),isM=/^\d{4}-\d{2}$/.test(S.sel);
   var sav=cur.filter(function(t){return t.saving}),exp=cur.filter(function(t){return t.amt<0&&!t.saving}),inc=cur.filter(function(t){return t.amt>0});
   var E=-sum(exp,function(t){return t.amt}),I=sum(inc,function(t){return t.amt});
   var by={};months.forEach(function(m){by[m]={inc:0,exp:0}});
@@ -508,13 +592,12 @@ function analyze(){
   var wk=[0,0,0,0,0,0,0];exp.forEach(function(t){wk[t.d.getDay()]-=t.amt});
   var days=1;
   if(cur.length){var a=cur[0].d,b=cur[cur.length-1].d;
-    if(S.sel!=='all'){var y=+S.sel.slice(0,4),mo=+S.sel.slice(5);var dim=new Date(y,mo,0).getDate();days=(b.getDate()>=20||months[months.length-1]!==S.sel)?dim:b.getDate()}
+    if(isM){var y=+S.sel.slice(0,4),mo=+S.sel.slice(5);var dim=new Date(y,mo,0).getDate();days=(b.getDate()>=20||months[months.length-1]!==S.sel)?dim:b.getDate()}
     else days=Math.round((b-a)/864e5)+1}
-  var pm=null;
-  if(S.sel!=='all'){var idx=months.indexOf(S.sel);if(idx>0)pm=months[idx-1]}
-  else if(months.length>=2)pm=months[months.length-2];
-  return{cur:cur,exp:exp,inc:inc,E:E,I:I,SV:-sum(sav,function(t){return t.amt}),by:by,months:months,catList:catList,wk:wk,days:days,pm:pm,
-    focus:S.sel==='all'?(months.length>=2?months[months.length-1]:null):S.sel};
+  var pm=null,focus=null,rm=monthsOf(cur);
+  if(isM){var idx=months.indexOf(S.sel);if(idx>0)pm=months[idx-1];focus=S.sel}
+  else if(rm.length>=2){pm=rm[rm.length-2];focus=rm[rm.length-1]}
+  return{cur:cur,exp:exp,inc:inc,E:E,I:I,SV:-sum(sav,function(t){return t.amt}),by:by,months:months,catList:catList,wk:wk,days:days,pm:pm,focus:focus};
 }
 
 function insights(A){
@@ -533,8 +616,7 @@ function insights(A){
   }
   // mom
   if(A.focus&&A.pm){
-    var cm=A.focus===S.sel||S.sel==='all'?A.focus:null,pmM=A.pm;
-    if(S.sel==='all'){cm=A.months[A.months.length-1]}
+    var cm=A.focus,pmM=A.pm;
     var cur={},prev={};
     all.forEach(function(t){if(t.amt<0&&!t.saving){if(t.ym===cm)cur[t.cat]=(cur[t.cat]||0)-t.amt;if(t.ym===pmM)prev[t.cat]=(prev[t.cat]||0)-t.amt}});
     var ec=A.by[cm].exp,ep=A.by[pmM].exp;
@@ -583,6 +665,84 @@ function insights(A){
 }
 
 /* ---------- render ---------- */
+/* ---------- theme (サブスク管理 Pro と同じ作り) ---------- */
+var GRAD=[['紫→ピンク','#8e2de2','#ff2d95'],['マゼンタ→紫','#d500f9','#651fff'],['青→紫','#2979ff','#aa00ff'],['ピンク→オレンジ','#ff2d95','#ff9100'],['赤→マゼンタ','#ff1744','#d500f9'],['シアン→青','#00b8d4','#2962ff']];
+var COLORS=['#2196f3','#f44336','#4caf50','#ff9800','#9c27b0','#e91e63','#009688','#90caf9','#a5d6a7','#f48fb1','#ce93d8','#ffcc80','#fff59d','#80deea','#000080','#000000','#1a237e','#0d47a1','#004d40','#37474f','#212121','#651fff','#7c4dff','#8e2de2','#aa00ff','#d500f9','#e040fb','#ff2d95','#ff4081','#f50057','#ff1744'];
+var TH={c:'#2196f3',e:null,m:'system'};
+try{var tj=JSON.parse(localStorage.getItem('pfin-theme')||'null');if(tj&&tj.c)TH=tj}catch(e){}
+function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
+function hex2hsl(hx){
+  var n=parseInt(hx.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,h=0,s=0,d=mx-mn;
+  if(d){s=d/(1-Math.abs(2*l-1));if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
+  return[h,s,l];
+}
+function hs(c){return 'hsl('+Math.round(c[0])+' '+Math.round(c[1]*100)+'% '+Math.round(c[2]*100)+'%)'}
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+function isDark(){return TH.m==='dark'||(TH.m!=='light'&&!!(mq&&mq.matches))}
+function applyTheme(){
+  var root=document.documentElement,dark=isDark();
+  if(TH.m==='dark'||TH.m==='light')root.setAttribute('data-theme',TH.m);else root.removeAttribute('data-theme');
+  var h=hex2hsl(TH.c),p=dark?[h[0],clamp(h[1],.5,.9),clamp(h[2],.6,.72)]:[h[0],clamp(h[1],.45,1),clamp(h[2],.28,.48)],e;
+  if(TH.e){var eh=hex2hsl(TH.e);e=dark?[eh[0],p[1],p[2]]:[eh[0],eh[1],clamp(eh[2],.3,.55)]}
+  else e=[(p[0]+35)%360,clamp(p[1]+.1,0,1),p[2]];
+  root.style.setProperty('--p',hs(p));root.style.setProperty('--pe',hs(e));
+  root.style.setProperty('--onp',dark?'#0b0f1a':'#ffffff');root.style.setProperty('--cl',dark?'62%':'50%');
+}
+function saveTheme(){try{localStorage.setItem('pfin-theme',JSON.stringify(TH))}catch(e){}}
+if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(TH.m==='system'){applyTheme();render()}});
+applyTheme();
+
+/* ---------- icons ---------- */
+var IC={
+  cal:'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V10h14v10z',
+  trend:'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z',
+  wallet:'M21 18v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v1h-9a2 2 0 00-2 2v8a2 2 0 002 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z',
+  pie:'M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z',
+  bars:'M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z',
+  bulb:'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z',
+  search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  save:'M19 7h-1V6a3 3 0 00-3-3H9a3 3 0 00-3 3v1H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM8 6a1 1 0 011-1h6a1 1 0 011 1v1H8V6z'
+};
+function ic(n,s){return '<svg width="'+(s||18)+'" height="'+(s||18)+'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="'+IC[n]+'"/></svg>'}
+
+/* ---------- category colors ---------- */
+var HUES=[190,213,234,252,267,280,291,302,313,324,335];
+function recolor(){
+  var e={},a={};
+  S.tx.forEach(function(t){a[t.cat]=(a[t.cat]||0)+Math.abs(t.amt);if(t.amt<0&&!t.saving)e[t.cat]=(e[t.cat]||0)-t.amt});
+  S.catOrder=Object.keys(e).sort(function(x,y){return e[y]-e[x]});
+  S.catIdx={};S.catOrder.forEach(function(k,i){S.catIdx[k]=i});
+  S.pillCats=Object.keys(a).sort(function(x,y){return a[y]-a[x]});
+}
+function catStyle(n){
+  var i=S.catIdx&&S.catIdx[n];
+  if(i===undefined)return '--c:hsl(220 12% var(--cl));--c2:hsl(220 12% calc(var(--cl) + 7%))';
+  var h=HUES[i%11],off=[0,-9,9,-18][Math.floor(i/11)%4];
+  return '--c:hsl('+h+' 85% calc(var(--cl) + '+off+'%));--c2:hsl('+((h+28)%360)+' 85% calc(var(--cl) + '+(off+7)+'%))';
+}
+
+/* ---------- period ---------- */
+function modeOf(){return S.sel==='all'?'all':S.sel==='r3'?'r3':'month'}
+function selLabel(){return S.sel==='all'?'全期間':S.sel==='r3'?'直近3か月':ymLabel(S.sel)}
+function periodUI(){
+  var md=modeOf(),ms=monthsOf(S.tx),h='<div class="seg" role="group" aria-label="期間">'+
+    [['all','全期間'],['r3','直近3か月'],['month','月ごと']].map(function(x){return '<button type="button" data-mode="'+x[0]+'" aria-pressed="'+(md===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  if(md==='month'){
+    var i=ms.indexOf(S.sel);
+    h+='<div class="step"><button class="ib" id="prev" type="button" aria-label="前の月"'+(i<=0?' disabled':'')+'>‹</button><select id="period" aria-label="月を選ぶ">'+
+      ms.map(function(m){return '<option value="'+m+'"'+(S.sel===m?' selected':'')+'>'+ymLabel(m)+'</option>'}).join('')+'</select><button class="ib" id="next" type="button" aria-label="次の月"'+(i>=ms.length-1?' disabled':'')+'>›</button></div>';
+  }
+  return h;
+}
+function metaUI(){
+  var I=S.info;
+  return '<div class="meta">'+(S.sample?'<span class="pill sample">サンプルデータ</span>':'<span class="pill">'+esc((S.raw&&S.raw.label)||I.label||'')+'</span>')+
+    '<span>'+I.n+' 件・'+ymLabel(S.tx[0].ym)+'〜'+ymLabel(S.tx[S.tx.length-1].ym)+'</span>'+
+    (S.futureN?'<label><input type="checkbox" id="fut"'+(S.future?' checked':'')+'> 今日より先の予定 '+S.futureN+' 件も含める</label>':'')+'</div>';
+}
+function cardHead(icon,title,extra){return '<div class="ch"><span class="ico">'+ic(icon,17)+'</span><h2>'+title+'</h2>'+(extra?'<span class="sp"></span>'+extra:'')+'</div>'}
+
+/* ---------- charts ---------- */
 function barPath(x,y,w,h,r){
   if(h<=0)return '';r=Math.min(r,h,w/2);
   return 'M'+x+' '+(y+h)+'V'+(y+r)+'a'+r+' '+r+' 0 0 1 '+r+' '+(-r)+'H'+(x+w-r)+'a'+r+' '+r+' 0 0 1 '+r+' '+r+'V'+(y+h)+'Z';
@@ -591,78 +751,108 @@ function monthChart(A){
   var n=A.months.length,slot=64,pl=44,pr=8,pt=12,pb=40,H=230,W=pl+pr+Math.max(n,3)*slot,ph=H-pt-pb;
   var mx=nice(Math.max.apply(null,A.months.map(function(m){return Math.max(A.by[m].inc,A.by[m].exp)}).concat([1])));
   var sy=function(v){return pt+ph-v/mx*ph};
-  var g='';
+  var g='<defs><linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--p)"/><stop offset="1" stop-color="var(--pe)"/></linearGradient><linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--exp)"/><stop offset="1" stop-color="color-mix(in srgb,var(--exp) 70%,#ff2d95)"/></linearGradient></defs>';
   for(var i=0;i<=4;i++){var v=mx/4*i,y=sy(v);
     g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+short(Math.round(v))+'</text>';}
+  var inSel=function(m){return S.sel==='all'||(S.sel==='r3'?A.months.slice(-3).indexOf(m)>=0:S.sel===m)};
   A.months.forEach(function(m,i){
-    var x0=pl+i*slot+(slot-52)/2,b=A.by[m],dim=S.sel!=='all'&&S.sel!==m;
+    var x0=pl+i*slot+(slot-52)/2,b=A.by[m],dim=!inSel(m);
     var tip=ymLabel(m)+'\n収入 '+yen(b.inc)+'\n支出 '+yen(b.exp)+'\n収支 '+yen(b.inc-b.exp);
-    g+='<g opacity="'+(dim?.35:1)+'">'+
-      '<path d="'+barPath(x0,sy(b.inc),24,ph+pt-sy(b.inc),4)+'" fill="var(--inc)"/>'+
-      '<path d="'+barPath(x0+28,sy(b.exp),24,ph+pt-sy(b.exp),4)+'" fill="var(--exp)"/></g>'+
+    g+='<g opacity="'+(dim?.35:1)+'"><path d="'+barPath(x0,sy(b.inc),24,ph+pt-sy(b.inc),6)+'" fill="url(#gInc)"/><path d="'+barPath(x0+28,sy(b.exp),24,ph+pt-sy(b.exp),6)+'" fill="url(#gExp)"/></g>'+
       '<text x="'+(x0+26)+'" y="'+(H-pb+16)+'" text-anchor="middle" style="fill:var(--ink2)">'+(+m.slice(5))+'月</text>'+
       ((i===0||m.slice(5)==='01')?'<text x="'+(x0+26)+'" y="'+(H-pb+30)+'" text-anchor="middle">'+m.slice(0,4)+'</text>':'')+
       '<rect x="'+(pl+i*slot)+'" y="'+pt+'" width="'+slot+'" height="'+(H-pt-pb+20)+'" fill="transparent" data-ym="'+m+'" data-tip="'+esc(tip)+'" tabindex="0" role="button" aria-label="'+esc(tip.replace(/\n/g,' '))+'" style="cursor:pointer"/>';
   });
-  return '<div class="scroll" id="chartScroll"><svg style="width:100%;min-width:'+W+'px;height:auto;display:block" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="月別の収入と支出">'+g+'</svg></div>';
+  return '<div class="scroll" id="chartScroll"><svg style="width:100%;min-width:'+W+'px;height:auto" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="月別の収入と支出">'+g+'</svg></div>';
+}
+function arcPath(cx,cy,r,a0,a1){
+  var x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+  return 'M'+x0.toFixed(2)+' '+y0.toFixed(2)+'A'+r+' '+r+' 0 '+((a1-a0)>Math.PI?1:0)+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2);
+}
+function donut(items,total){
+  var defs='',paths='',a=-Math.PI/2,r=86;
+  items.forEach(function(c,i){
+    var frac=c.v/total,span=frac*Math.PI*2,gap=items.length>1&&span>0.06?0.025:0;
+    defs+='<linearGradient id="dg'+i+'" x1="0" y1="0" x2="1" y2="1" style="'+c.st+'"><stop offset="0" style="stop-color:var(--c)"/><stop offset="1" style="stop-color:var(--c2)"/></linearGradient>';
+    var d=items.length===1?'<circle cx="110" cy="110" r="'+r+'" fill="none" stroke="url(#dg'+i+')" stroke-width="34" data-di="'+i+'" data-n="'+esc(c.n)+'" data-a="'+yen(c.v)+'" data-pc="100%"/>':
+      '<path d="'+arcPath(110,110,r,a+gap,a+span-gap)+'" fill="none" stroke="url(#dg'+i+')" stroke-width="34" data-di="'+i+'" data-n="'+esc(c.n)+'" data-a="'+yen(c.v)+'" data-pc="'+(frac*100).toFixed(1)+'%" data-tip="'+esc(c.n+'\n'+yen(c.v)+'（'+(frac*100).toFixed(1)+'%）')+'"/>';
+    paths+=d;a+=span;
+  });
+  return '<div class="donut"><svg viewBox="0 0 220 220" role="img" aria-label="分類別の割合"><defs>'+defs+'</defs>'+paths+'</svg><div class="dcenter" id="dcenter" data-total="'+yen(total)+'"><small>期間合計</small><b>'+yen(total)+'</b></div></div>';
+}
+
+/* ---------- tabs ---------- */
+function heroSum(A){
+  var bal=A.I-A.E,rate=A.I>0?bal/A.I*100:null,md=modeOf(),rm=Math.max(1,monthsOf(A.cur).length);
+  var sub=md==='month'?(A.pm?'前月 '+yen(A.by[A.pm].exp):''):'月平均 '+yen(A.E/rm);
+  var isub=md==='month'?(A.pm?'前月 '+yen(A.by[A.pm].inc):''):'月平均 '+yen(A.I/rm);
+  return '<div class="hero"><div class="hrow"><div><div class="hl">'+selLabel()+'の支出</div><div class="hv">'+yenN(A.E)+'<small>円</small></div><div class="hs">'+esc(sub)+'</div></div><span class="hicon">'+ic('trend',48)+'</span></div>'+
+    '<div class="tiles"><div class="tile"><div class="tl">'+ic('cal',16)+'収入</div><div class="tv">'+yenN(A.I)+'<small>円</small></div><div class="ts">'+esc(isub)+'</div></div>'+
+    '<div class="tile"><div class="tl">'+ic('wallet',16)+'収支</div><div class="tv">'+(bal<0?'-':'')+yenN(bal)+'<small>円</small></div><div class="ts">'+(bal>=0?'黒字':'赤字')+'</div></div></div>'+
+    '<div class="strip">'+ic('save',18)+'<span>貯蓄率</span><b>'+(rate===null?'—':rate.toFixed(1)+'%')+'</b>'+(A.SV?'<small>貯蓄・投資 '+yen(A.SV)+' は支出に含めず</small>':'')+'</div></div>';
+}
+function tabSum(A){
+  var ins=insights(A).map(function(x){return '<div class="in"><span class="tag '+x.t+'">'+x.l+'</span><div><h3>'+esc(x.h)+'</h3><p>'+esc(x.b)+'</p></div></div>'}).join('');
+  var wm=Math.max.apply(null,A.wk.concat([1])),WD=['日','月','火','水','木','金','土'];
+  var wk=A.wk.map(function(v,i){return '<div data-tip="'+WD[i]+'曜 '+yen(v)+'"><span>'+short(Math.round(v))+'</span><i style="height:'+Math.max(3,v/wm*100)+'px"></i><b>'+WD[i]+'</b></div>'}).join('');
+  var h='';
+  if(S.sample)h+='<div class="card hint"><strong>いまはサンプルデータを表示しています</strong><span>CSV・PDF・メモを読み込むと、自分のデータに置き換わります。</span><button class="btn" id="pickFile" type="button">データを読み込む</button></div>';
+  h+=heroSum(A)+periodUI()+metaUI();
+  h+='<section class="card">'+cardHead('bars','月ごとの収入と支出')+'<div class="legend"><span><i class="sw" style="background:var(--p)"></i>収入</span><span><i class="sw" style="background:var(--exp)"></i>支出</span><span>棒をタップすると、その月だけを分析します</span></div>'+monthChart(A)+'</section>';
+  h+='<section class="card">'+cardHead('bulb','気づいたこと')+'<div class="ins">'+(ins||'<p class="empty">十分なデータがありません。</p>')+'</div></section>';
+  h+='<section class="card">'+cardHead('cal','曜日ごとの支出')+'<div class="wk">'+wk+'</div></section>';
+  return h;
+}
+function tabCat(A){
+  var cl=A.catList,total=A.E;
+  var top=cl.slice(0,8),rest=cl.slice(8),rv=sum(rest,function(x){return x.v});
+  var items=top.map(function(c){return{n:c.n,v:c.v,st:catStyle(c.n)}});
+  if(rv>0)items.push({n:'その他 '+rest.length+'分類',v:rv,st:catStyle('')});
+  var h='';
+  if(!cl.length||total<=0)return '<div class="card empty">この期間の支出はありません。</div>'+periodUI()+metaUI();
+  h+='<div class="hero"><div class="hrow"><div><div class="hl">'+selLabel()+'の支出</div><div class="hv">'+yenN(total)+'<small>円</small></div><div class="hs">最大は「'+esc(cl[0].n)+'」 '+Math.round(cl[0].v/total*100)+'%・'+cl.length+'分類</div></div><span class="hicon">'+ic('pie',48)+'</span></div>'+
+    '<div class="strip2">'+items.map(function(c){return '<i style="'+c.st+';width:'+(c.v/total*100)+'%;background:linear-gradient(90deg,var(--c),var(--c2))"></i>'}).join('')+'</div></div>';
+  h+=periodUI()+metaUI();
+  h+='<section class="card">'+cardHead('pie','分類別の割合')+donut(items,total)+'<p class="foot" style="text-align:center;margin-top:10px">リングをタップすると詳細が見られます</p></section>';
+  var rows=(S.catAll?cl:cl.slice(0,8)),mx=cl[0].v;
+  h+='<section class="card">'+cardHead('bars','分類別ランキング')+'<div class="rank">'+rows.map(function(c,i){
+    return '<button type="button" class="rrow" data-cat="'+esc(c.n)+'" style="'+catStyle(c.n)+'"><div class="rtop"><span class="badge">'+(i+1)+'</span><span class="nm">'+esc(c.n)+'</span><span class="am">'+yen(c.v)+'</span><span class="sh">'+Math.round(c.v/total*100)+'%</span></div><div class="rbar"><i style="width:'+Math.max(2,c.v/mx*100)+'%"></i></div></button>'}).join('')+'</div>'+
+    (cl.length>8?'<div class="row" style="margin-top:10px;justify-content:center"><button class="btn sub sm" id="catAll" type="button">'+(S.catAll?'上位だけ表示':'すべての分類を表示（'+cl.length+'）')+'</button></div>':'')+
+    '<p class="foot" style="margin-top:10px">分類をタップすると、その分類の明細を見られます。</p></section>';
+  return h;
+}
+function tabTx(A){
+  var h=periodUI()+metaUI();
+  h+='<label class="search">'+ic('search',22)+'<input id="q" type="search" placeholder="メモ・分類で検索" aria-label="明細を検索" value="'+esc(S.q)+'"></label>';
+  h+='<div class="pills" role="group" aria-label="分類">'+'<button type="button" class="pillb" data-cat="" aria-pressed="'+(!S.cat)+'">すべて</button>'+
+    S.pillCats.map(function(c){return '<button type="button" class="pillb" data-cat="'+esc(c)+'" aria-pressed="'+(S.cat===c)+'" style="'+catStyle(c)+'"><i class="dot"></i>'+esc(c)+'</button>'}).join('')+'</div>';
+  if(S.cat){
+    var cv=A.months.map(function(m){return sum(S.tx.filter(function(t){return t.cat===S.cat&&t.ym===m&&t.amt<0}),function(t){return -t.amt})}),cmx=Math.max.apply(null,cv.concat([1]));
+    var onM=function(m){return S.sel==='all'||(S.sel==='r3'?A.months.slice(-3).indexOf(m)>=0:S.sel===m)};
+    h+='<section class="card" style="'+catStyle(S.cat)+'">'+cardHead('bars','「'+esc(S.cat)+'」の月別','<button class="btn sub sm" id="clearCat" type="button">解除</button>')+'<div class="mini">'+
+      A.months.map(function(m,i){return '<div'+(onM(m)?' class="on"':'')+' data-tip="'+ymLabel(m)+'\n'+yen(cv[i])+'"><i style="height:'+Math.max(2,cv[i]/cmx*70)+'px"></i><b>'+(+m.slice(5))+'月</b></div>'}).join('')+'</div></section>';
+  }
+  h+='<div class="lrow"><span class="cnt" id="txsum"></span><select id="kind" aria-label="種類"><option value="exp"'+(S.kind==='exp'?' selected':'')+'>支出</option><option value="inc"'+(S.kind==='inc'?' selected':'')+'>収入</option><option value="all"'+(S.kind==='all'?' selected':'')+'>すべて</option></select><select id="sort" aria-label="並び順"><option value="big"'+(S.sort==='big'?' selected':'')+'>金額が高い順</option><option value="new"'+(S.sort==='new'?' selected':'')+'>新しい順</option></select></div>';
+  h+='<div class="txs" id="txlist"></div><div class="row" style="justify-content:center"><button class="btn sub" id="more" type="button">もっと見る</button></div>';
+  return h;
 }
 function render(){
   var out=$('#out');
   if(!S.tx.length&&S.futureN){S.future=true;applyFuture()}
-  if(!S.tx.length){out.innerHTML='<div class="card empty">取り込める明細がありませんでした。列の対応を確認してください。</div>';
-    setStatus('日付と金額の列を読み取れませんでした。「列の対応」で指定してください。',true);return}
-  var A=analyze(),I=S.info;
-  $('#status').innerHTML=(S.sample?'<span class="pill sample">サンプルデータ</span>':'<span class="pill">'+esc((S.raw&&S.raw.label)||I.label||'')+'</span>')+
-    '<span>'+I.n+' 件を集計</span>'+(I.excluded?'<span>・振替などを除外 '+I.excluded+' 件</span>':'')+(I.bad?'<span>・読み取れない行 '+I.bad+' 件</span>':'')+
-    (S.saved?'<span>・この端末に保存済み</span><button class="btn sub sm" id="forget" type="button">保存データを消去</button>':'');
-  var bal=A.I-A.E,rate=A.I>0?bal/A.I*100:null,nm=A.months.length;
-  var pmTxt='';
-  if(S.sel!=='all'&&A.pm){var p=A.by[A.pm];pmTxt='前月 '+yen(p.exp)}
-  var kp=[
-    ['収入',yen(A.I),S.sel==='all'?'月平均 '+yen(A.I/nm):(A.pm?'前月 '+yen(A.by[A.pm].inc):''),''],
-    ['支出',yen(A.E),S.sel==='all'?'月平均 '+yen(A.E/nm):pmTxt,''],
-    ['収支',yen(bal),(bal>=0?'黒字':'赤字')+(A.SV?'（貯蓄・投資 '+yen(A.SV)+' は支出に含めず）':''),bal<0?'neg':''],
-    ['貯蓄率',rate===null?'—':rate.toFixed(1)+'%','目安は収入の20%','']
-  ];
-  var idxM=A.months.indexOf(S.sel);
-  var prevD=(S.sel!=='all'&&idxM<=0)||nm<2,nextD=S.sel==='all'||idxM>=nm-1;
-  var opts='<option value="all">全期間（'+nm+'か月）</option>'+A.months.map(function(m){return '<option value="'+m+'"'+(S.sel===m?' selected':'')+'>'+ymLabel(m)+'</option>'}).join('');
-  var cl=A.catList,top=S.catAll?cl.slice():cl.slice(0,8),rest=S.catAll?[]:cl.slice(8),restV=sum(rest,function(x){return x.v});
-  if(restV>0)top.push({n:'その他 '+rest.length+'件',v:restV,o:1});
-  var cm=Math.max.apply(null,top.map(function(c){return c.v}).concat([1]));
-  var cats=top.map(function(c){
-    var inner='<span class="n">'+esc(c.n)+'</span><span class="t"><i style="width:'+(c.v/cm*100)+'%"></i></span><span class="a">'+yen(c.v)+'<em>'+Math.round(c.v/A.E*100)+'%</em></span>';
-    return c.o?'<div class="cat">'+inner+'</div>':'<button type="button" class="cat" data-cat="'+esc(c.n)+'" aria-pressed="'+(S.cat===c.n)+'">'+inner+'</button>'}).join('');
-  var catMore=cl.length>8?'<div class="row" style="margin-top:8px"><button class="btn sub sm" id="catAll" type="button">'+(S.catAll?'上位だけ表示':'すべての分類を表示（'+cl.length+'）')+'</button></div>':'';
-  var catTrend='';
-  if(S.cat){
-    var cv=A.months.map(function(m){return sum(S.tx.filter(function(t){return t.cat===S.cat&&t.ym===m&&t.amt<0}),function(t){return -t.amt})});
-    var cmx=Math.max.apply(null,cv.concat([1]));
-    catTrend='<div class="row" style="margin-top:12px;justify-content:space-between"><strong style="font-size:14px">「'+esc(S.cat)+'」の月別</strong><button class="btn sub sm" id="clearCat" type="button">絞り込みを解除</button></div><div class="mini">'+
-      A.months.map(function(m,i){return '<div'+(S.sel===m?' class="on"':'')+' data-tip="'+ymLabel(m)+'\n'+yen(cv[i])+'"><i style="height:'+Math.max(1,cv[i]/cmx*70)+'px"></i><b>'+(+m.slice(5))+'月</b></div>'}).join('')+'</div>';
-  }
-  var wm=Math.max.apply(null,A.wk.concat([1])),WD=['日','月','火','水','木','金','土'];
-  var wk=A.wk.map(function(v,i){return '<div data-tip="'+WD[i]+'曜 '+yen(v)+'"><span>'+short(Math.round(v))+'</span><i style="height:'+Math.max(2,v/wm*100)+'px"></i><b>'+WD[i]+'</b></div>'}).join('');
-  var ins=insights(A).map(function(x){return '<div class="in"><span class="tag '+x.t+'">'+x.l+'</span><div><h3>'+esc(x.h)+'</h3><p>'+esc(x.b)+'</p></div></div>'}).join('');
-  var bigs=A.exp.slice().sort(function(a,b){return a.amt-b.amt}).slice(0,10).map(function(t){
-    var d=t.d;return '<tr><td>'+(d.getMonth()+1)+'/'+d.getDate()+'</td><td>'+esc(t.desc)+'</td><td>'+esc(t.cat)+'</td><td class="r">'+yen(-t.amt)+'</td></tr>'}).join('');
-  out.innerHTML=
-   '<div class="card bar"><div class="nav"><button class="ib" id="prev" type="button" aria-label="前の月"'+(prevD?' disabled':'')+'>‹</button><select id="period" aria-label="分析する期間">'+opts+'</select><button class="ib" id="next" type="button" aria-label="次の月"'+(nextD?' disabled':'')+'>›</button></div></div>'+
-   '<div class="row meta"><span class="foot">'+ymLabel(S.tx[0].ym)+'〜'+ymLabel(S.tx[S.tx.length-1].ym)+'のデータ</span>'+(S.futureN?'<label class="foot"><input type="checkbox" id="fut"'+(S.future?' checked':'')+'> 今日より先の予定 '+S.futureN+' 件も含める</label>':'')+'</div>'+
-   '<div class="kpis">'+kp.map(function(k){return '<div class="card kpi"><span class="k">'+k[0]+'</span><span class="v '+k[3]+'">'+k[1]+'</span><span class="d">'+esc(k[2])+'</span></div>'}).join('')+'</div>'+
-   '<section class="card"><h2>月ごとの収入と支出</h2><div class="legend"><span><i class="sw" style="background:var(--inc)"></i>収入</span><span><i class="sw" style="background:var(--exp)"></i>支出</span><span>棒をタップすると、その月だけを分析します</span></div>'+monthChart(A)+'</section>'+
-   '<div class="two"><section class="card"><h2>分類ごとの支出</h2>'+'<p class="foot">分類をタップすると、下の明細をその分類だけに絞り込みます。</p><div class="cats">'+(cats||'<p class="empty">支出がありません。</p>')+'</div>'+catMore+catTrend+'</section>'+
-   '<section class="card"><h2>曜日ごとの支出</h2><p class="foot">期間内の合計です。</p><div class="wk">'+wk+'</div></section></div>'+
-   '<section class="card"><h2>気づいたこと</h2><div class="ins">'+(ins||'<p class="empty">十分なデータがありません。</p>')+'</div></section>'+
-   '<section class="card txt"><h2>明細</h2><div class="filters"><input id="q" type="search" placeholder="メモ・分類で検索" aria-label="明細を検索" value="'+esc(S.q)+'"><select id="kind" aria-label="種類"><option value="exp"'+(S.kind==='exp'?' selected':'')+'>支出</option><option value="inc"'+(S.kind==='inc'?' selected':'')+'>収入</option><option value="all"'+(S.kind==='all'?' selected':'')+'>すべて</option></select><select id="sort" aria-label="並び順"><option value="big"'+(S.sort==='big'?' selected':'')+'>金額の大きい順</option><option value="new"'+(S.sort==='new'?' selected':'')+'>新しい順</option></select></div><p class="foot" id="txsum"></p><div class="scroll"><table><thead><tr><th>日付</th><th>内容</th><th class="r">金額</th></tr></thead><tbody id="txbody"></tbody></table></div><div class="row" style="margin-top:10px"><button class="btn sub" id="more" type="button">もっと見る</button></div></section>';
-  if(S.sample)out.insertAdjacentHTML('afterbegin','<div class="card hint"><strong>いまはサンプルデータを表示しています</strong><span>CSV・PDF・メモを読み込むと、自分のデータに置き換わります。</span><button class="btn" id="pickFile" type="button">ファイルを選ぶ</button></div>');
-  renderList();
+  document.querySelectorAll('.tabs [data-tab]').forEach(function(b){b.setAttribute('aria-selected',String(b.getAttribute('data-tab')===S.tab))});
+  if(!S.tx.length){out.innerHTML='<div class="card empty">取り込める明細がありませんでした。<br>「データを読み込む」の「列の対応」で日付と金額の列を指定してください。</div>';return}
+  var A=analyze();
+  var tipHide=$('#tip');if(tipHide)tipHide.hidden=true;
+  var keepQ=document.activeElement&&document.activeElement.id==='q';
+  out.innerHTML=S.tab==='cat'?tabCat(A):S.tab==='tx'?tabTx(A):tabSum(A);
+  var infoHtml=(S.sample?'<span class="pill sample">サンプルデータ</span>':'<span class="pill">'+esc((S.raw&&S.raw.label)||S.info.label||'')+'</span>')+'<span>'+S.info.n+' 件を集計</span>'+(S.info.excluded?'<span>・振替などを除外 '+S.info.excluded+' 件</span>':'')+(S.info.bad?'<span>・読み取れない行 '+S.info.bad+' 件</span>':'');
+  if(!$('#status').getAttribute('data-err'))$('#status').innerHTML=infoHtml;
+  if(S.tab==='tx'){renderList();if(keepQ){var q=$('#q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}}
   var sc=$('#chartScroll');
   if(sc){var n2=A.months.length,i2=A.months.indexOf(S.sel);sc.scrollLeft=i2>=0?(i2+.5)/n2*sc.scrollWidth-sc.clientWidth/2:sc.scrollWidth}
 }
-
 function txList(){
-  var base=S.sel==='all'?S.tx:S.tx.filter(function(t){return t.ym===S.sel}),q=S.q.trim().toLowerCase();
+  var base=S.tx.filter(selMatch),q=S.q.trim().toLowerCase();
   var l=base.filter(function(t){
     if(S.kind==='exp'&&t.amt>=0)return false;if(S.kind==='inc'&&t.amt<=0)return false;
     if(S.cat&&t.cat!==S.cat)return false;
@@ -670,15 +860,35 @@ function txList(){
   return l.sort(S.sort==='new'?function(a,b){return b.d-a.d}:function(a,b){return Math.abs(b.amt)-Math.abs(a.amt)});
 }
 function renderList(){
-  var body=$('#txbody');if(!body)return;
-  var l=txList(),shown=l.slice(0,S.lim),tot=sum(l,function(t){return t.amt}),multi=S.sel==='all';
-  $('#txsum').textContent=l.length+' 件'+(S.cat?'（'+S.cat+'）':'')+' ／ 合計 '+yen(S.kind==='all'?tot:Math.abs(tot));
-  body.innerHTML=shown.length?shown.map(function(t){
+  var box=$('#txlist');if(!box)return;
+  var l=txList(),shown=l.slice(0,S.lim),tot=sum(l,function(t){return t.amt}),multi=S.sel==='all'||S.sel==='r3';
+  $('#txsum').textContent=l.length+'件 ／ 合計 '+yen(S.kind==='all'?tot:Math.abs(tot));
+  box.innerHTML=shown.length?shown.map(function(t){
     var d=t.d,ds=(multi?(d.getFullYear()%100)+'/':'')+(d.getMonth()+1)+'/'+d.getDate();
-    return '<tr><td class="d">'+ds+'</td><td>'+esc(t.desc)+'<small>'+esc(t.cat)+(t.fixed?'<span class="chip">固定費</span>':'')+(t.saving?'<span class="chip">貯蓄</span>':'')+'</small></td><td class="r">'+yen(t.amt)+'</td></tr>'}).join(''):'<tr><td colspan="3" class="empty">該当する明細がありません。</td></tr>';
-  $('#more').hidden=shown.length>=l.length;
+    return '<div class="txc" style="'+catStyle(t.cat)+'"><span class="stripe"></span><div class="tb"><div class="tn">'+esc(t.desc)+'</div><div class="tg"><span class="dbadge">'+ds+'</span><span class="ctag">'+esc(t.cat)+'</span>'+(t.fixed?'<span class="ctag x">固定費</span>':'')+(t.saving?'<span class="ctag x">貯蓄</span>':'')+'</div></div><div class="ta"><b'+(t.amt>0?' class="in2"':'')+'>'+(t.amt>0?'+':'')+yen(t.amt)+'</b></div></div>'}).join(''):'<div class="empty">該当する明細がありません。</div>';
+  var mo=$('#more');if(mo)mo.hidden=shown.length>=l.length;
 }
-/* ---------- sample ---------- */
+
+/* ---------- sheets ---------- */
+var openSheetId=null;
+function openSheet(id){
+  closeSheets();var el=$('#'+id);if(!el)return;
+  if(id==='sheetSet')renderSettings();
+  el.hidden=false;$('#scrim').hidden=false;document.body.style.overflow='hidden';openSheetId=id;el.scrollTop=0;el.focus();
+}
+function closeSheets(){
+  ['sheetAdd','sheetSet'].forEach(function(i){var e=$('#'+i);if(e)e.hidden=true});
+  var s=$('#scrim');if(s)s.hidden=true;document.body.style.overflow='';openSheetId=null;
+}
+function renderSettings(){
+  var dark=isDark();
+  $('#setBody').innerHTML=
+   '<label class="setrow"><span>ダークモード</span><input type="checkbox" class="sw2" id="darkSw" role="switch"'+(dark?' checked':'')+'></label>'+
+   '<h3>ビビッドグラデーション</h3><div class="gp">'+GRAD.map(function(g,i){var on=TH.e===g[2]&&TH.c===g[1];return '<button type="button" class="gpb" data-gp="'+i+'" aria-pressed="'+on+'"><i style="background:linear-gradient(135deg,'+g[1]+','+g[2]+')"></i>'+g[0]+'</button>'}).join('')+'</div>'+
+   '<h3>テーマカラー</h3><div class="tc">'+COLORS.map(function(c){return '<button type="button" class="tcb" data-tc="'+c+'" aria-label="'+c+'" aria-pressed="'+(!TH.e&&TH.c===c)+'" style="background:'+c+'"></button>'}).join('')+'</div>'+
+   '<h3>データ</h3><div class="setrow"><span>'+(S.saved?'この端末に保存済み':(S.sample?'サンプルを表示中':'未保存'))+'<small>読み込んだデータはこのブラウザの中にだけ保存されます。</small></span>'+(S.saved?'<button class="btn sub sm" id="forget" type="button">保存データを消去</button>':'')+'</div>'+
+   '<p class="note" style="margin-top:10px">分類が無い明細は、店名や内容のキーワードから推定します。振替・カード引き落とし・「計算対象外」の行は集計から除きます。貯金・積立・NISA などは支出に含めず、貯蓄として別に数えます。</p>';
+}
 function sampleCSV(){
   var seed=7;function rnd(){seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}
   var R=function(a,b){return Math.round((a+rnd()*(b-a))/10)*10};
@@ -708,6 +918,7 @@ function sampleCSV(){
 }
 
 /* ---------- events ---------- */
+/* ---------- events ---------- */
 var tip=$('#tip');
 document.addEventListener('pointermove',function(e){
   var t=e.target.closest&&e.target.closest('[data-tip]');
@@ -718,33 +929,55 @@ document.addEventListener('pointermove',function(e){
   tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px';
 });
 function stepMonth(d){
-  var ms=monthsOf(S.tx),i=ms.indexOf(S.sel);
-  if(S.sel==='all'){if(d<0)S.sel=ms[ms.length-1]}else{var j=i+d;if(j>=0&&j<ms.length)S.sel=ms[j]}
+  var ms=monthsOf(S.tx),i=ms.indexOf(S.sel),j=i+d;
+  if(i>=0&&j>=0&&j<ms.length){S.sel=ms[j];S.lim=20;render()}
+}
+function setMode(md){
+  var ms=monthsOf(S.tx);
+  if(md==='all')S.sel='all';else if(md==='r3')S.sel='r3';
+  else if(!/^\d{4}-\d{2}$/.test(S.sel))S.sel=ms[ms.length-1];
   S.lim=20;render();
 }
+function afterTheme(){saveTheme();applyTheme();renderSettings();render()}
 document.addEventListener('click',function(e){
   var t=e.target.closest?e.target:e.target.parentNode;
-  var r=t.closest('[data-ym]');
-  if(r){S.sel=S.sel===r.getAttribute('data-ym')?'all':r.getAttribute('data-ym');S.lim=20;render();return}
-  var c=t.closest('[data-cat]');
-  if(c){var k=c.getAttribute('data-cat');S.cat=S.cat===k?null:k;S.lim=20;render();return}
+  var x;
+  if(x=t.closest('[data-tab]')){S.tab=x.getAttribute('data-tab');window.scrollTo(0,0);render();return}
+  if(x=t.closest('[data-mode]')){setMode(x.getAttribute('data-mode'));return}
+  if(x=t.closest('[data-ym]')){var m=x.getAttribute('data-ym');S.sel=S.sel===m?'all':m;S.lim=20;render();return}
+  if(x=t.closest('[data-di]')){
+    var c=$('#dcenter'),i=x.getAttribute('data-di'),on=c.getAttribute('data-on')===i;
+    document.querySelectorAll('[data-di]').forEach(function(el){el.style.opacity=(!on&&el!==x)?'.35':'1'});
+    c.innerHTML=on?'<small>期間合計</small><b>'+esc(c.getAttribute('data-total'))+'</b>':'<small>'+esc(x.getAttribute('data-n'))+'</small><b>'+esc(x.getAttribute('data-a'))+'</b><em>'+esc(x.getAttribute('data-pc'))+'</em>';
+    c.setAttribute('data-on',on?'':i);return}
+  if(x=t.closest('[data-cat]')){
+    var k=x.getAttribute('data-cat');
+    if(x.classList.contains('rrow')){S.cat=k;S.tab='tx';window.scrollTo(0,0)}else S.cat=(!k||S.cat===k)?null:k;
+    S.lim=20;render();return}
+  if(x=t.closest('[data-gp]')){var g=GRAD[+x.getAttribute('data-gp')];TH.c=g[1];TH.e=g[2];afterTheme();return}
+  if(x=t.closest('[data-tc]')){TH.c=x.getAttribute('data-tc');TH.e=null;afterTheme();return}
   var id=(t.closest('button')||{}).id;
   if(id==='prev')stepMonth(-1);else if(id==='next')stepMonth(1);
   else if(id==='clearCat'){S.cat=null;render()}
   else if(id==='catAll'){S.catAll=!S.catAll;render()}
   else if(id==='more'){S.lim+=30;renderList()}
-  else if(id==='pickFile')$('#file').click();
+  else if(id==='pickFile'||id==='fab')openSheet('sheetAdd');
+  else if(id==='btnSettings')openSheet('sheetSet');
   else if(id==='forget')forget();
+  else if(t.id==='scrim')closeSheets();
 });
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&openSheetId){closeSheets();return}
   if((e.key==='Enter'||e.key===' ')&&e.target.getAttribute&&e.target.getAttribute('data-ym')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))}
 });
 document.addEventListener('input',function(e){if(e.target.id==='q'){S.q=e.target.value;S.lim=20;renderList()}});
 document.addEventListener('change',function(e){
-  if(e.target.id==='period'){S.sel=e.target.value;render()}
-  else if(e.target.id==='fut'){S.future=e.target.checked;applyFuture();save();render()}
-  else if(e.target.id==='kind'){S.kind=e.target.value;S.lim=20;renderList()}
-  else if(e.target.id==='sort'){S.sort=e.target.value;renderList()}
+  var id=e.target.id;
+  if(id==='period'){S.sel=e.target.value;S.lim=20;render()}
+  else if(id==='fut'){S.future=e.target.checked;applyFuture();save();render()}
+  else if(id==='kind'){S.kind=e.target.value;S.lim=20;renderList()}
+  else if(id==='sort'){S.sort=e.target.value;renderList()}
+  else if(id==='darkSw'){TH.m=e.target.checked?'dark':'light';afterTheme()}
   else if(e.target.dataset&&e.target.dataset.role){S.map[e.target.dataset.role]=+e.target.value;buildTx();save();render()}
 });
 $('#file').addEventListener('change',function(e){if(e.target.files[0])readFile(e.target.files[0]);e.target.value=''});
@@ -753,7 +986,7 @@ var drop=$('#drop');
 ['dragleave','drop'].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.remove('over')})});
 drop.addEventListener('drop',function(e){var f=e.dataTransfer.files[0];if(f)readFile(f)});
 $('#memoGo').addEventListener('click',function(){loadMemo($('#memo').value)});
-$('#sampleGo').addEventListener('click',function(){loadCSVText(sampleCSV(),'サンプル',true)});
+$('#sampleGo').addEventListener('click',function(){loadCSVText(sampleCSV(),'サンプル',true);closeSheets()});
 
 if(!restore())loadCSVText(sampleCSV(),'サンプル',true);
 })();
