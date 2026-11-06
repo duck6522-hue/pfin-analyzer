@@ -492,10 +492,12 @@ function applyFuture(){
   S.tx=S.future?S.allTx:S.allTx.filter(function(t){return t.d<=now});
   S.info.n=S.tx.length;
   if(/^\d{4}-\d{2}$/.test(S.sel)&&!S.tx.some(function(t){return t.ym===S.sel}))S.sel=defaultSel();
-  var lm=monthsOf(S.tx),lastM=lm[lm.length-1],maxD=0;
-  S.tx.forEach(function(t){if(t.ym===lastM&&t.d.getDate()>maxD)maxD=t.d.getDate()});
-  S.partial=(lm.length>=2&&maxD<20)?lastM:null; // 月の途中までのデータの月
-  S.last3=lm.slice(-3);recolor();
+  // 今日までの実績で判定する: 最新の月が途中までなら「途中の月」、直近3か月は完了した月だけで数える
+  var act=S.allTx.filter(function(t){return t.d<=now});if(!act.length)act=S.allTx;
+  var am=monthsOf(act),lastM=am[am.length-1],maxD=0;
+  act.forEach(function(t){if(t.ym===lastM&&t.d.getDate()>maxD)maxD=t.d.getDate()});
+  S.partial=(am.length>=2&&maxD<20)?lastM:null;
+  S.last3=am.filter(function(m){return m!==S.partial}).slice(-3);recolor();
 }
 // 開いたときの期間: 月ごと。最新の月が途中までのデータなら、ひとつ前の月にする
 function defaultSel(){
@@ -747,7 +749,7 @@ function modeOf(){return S.sel==='all'?'all':S.sel==='r3'?'r3':'month'}
 function selLabel(){return S.sel==='all'?'全期間':S.sel==='r3'?'直近3か月':ymLabel(S.sel)}
 function periodUI(){
   var md=modeOf(),ms=monthsOf(S.tx),h='<div class="seg" role="group" aria-label="期間">'+
-    [['all','全期間'],['r3','直近3か月'],['month','月ごと']].map(function(x){return '<button type="button" data-mode="'+x[0]+'" aria-pressed="'+(md===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+    [['month','月ごと'],['r3','直近3か月'],['all','全期間']].map(function(x){return '<button type="button" data-mode="'+x[0]+'" aria-pressed="'+(md===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   if(md==='month'){
     var i=ms.indexOf(S.sel);
     h+='<div class="step"><button class="ib" id="prev" type="button" aria-label="前の月"'+(i<=0?' disabled':'')+'>‹</button><select id="period" aria-label="月を選ぶ">'+
@@ -775,7 +777,7 @@ function monthChart(A){
   var g='<defs><linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--inc)"/><stop offset="1" stop-color="color-mix(in srgb,var(--inc) 70%,#00b8d4)"/></linearGradient><linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--exp)"/><stop offset="1" stop-color="color-mix(in srgb,var(--exp) 70%,#ff2d95)"/></linearGradient></defs>';
   for(var i=0;i<=4;i++){var v=mx/4*i,y=sy(v);
     g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+short(Math.round(v))+'</text>';}
-  var inSel=function(m){return S.sel==='all'||(S.sel==='r3'?A.months.slice(-3).indexOf(m)>=0:S.sel===m)};
+  var inSel=function(m){return S.sel==='all'||(S.sel==='r3'?S.last3.indexOf(m)>=0:S.sel===m)};
   A.months.forEach(function(m,i){
     var x0=pl+i*slot+(slot-52)/2,b=A.by[m],dim=!inSel(m);
     var tip=ymLabel(m)+'\n収入 '+yen(b.inc)+'\n支出 '+yen(b.exp)+'\n収支 '+yen(b.inc-b.exp);
@@ -849,7 +851,7 @@ function tabTx(A){
     S.pillCats.map(function(c){return '<button type="button" class="pillb" data-cat="'+esc(c)+'" aria-pressed="'+(S.cat===c)+'" style="'+catStyle(c)+'"><i class="dot"></i>'+esc(c)+'</button>'}).join('')+'</div>';
   if(S.cat){
     var cv=A.months.map(function(m){return sum(S.tx.filter(function(t){return t.cat===S.cat&&t.ym===m&&t.amt<0}),function(t){return -t.amt})}),cmx=Math.max.apply(null,cv.concat([1]));
-    var onM=function(m){return S.sel==='all'||(S.sel==='r3'?A.months.slice(-3).indexOf(m)>=0:S.sel===m)};
+    var onM=function(m){return S.sel==='all'||(S.sel==='r3'?S.last3.indexOf(m)>=0:S.sel===m)};
     h+='<section class="card" style="'+catStyle(S.cat)+'">'+cardHead('bars','「'+esc(S.cat)+'」の月別','<button class="btn sub sm" id="clearCat" type="button">解除</button>')+'<div class="mini">'+
       A.months.map(function(m,i){return '<div'+(onM(m)?' class="on"':'')+' data-tip="'+ymLabel(m)+'\n'+yen(cv[i])+'"><i style="height:'+Math.max(2,cv[i]/cmx*70)+'px"></i><b>'+(+m.slice(5))+'月</b></div>'}).join('')+'</div></section>';
   }
