@@ -18,7 +18,7 @@
 :root{
   --bg:#f4f5f9; --surface:#ffffff; --ink:#14171f; --ink2:#4b5260; --muted:#7a8291; --line:#dfe2ea; --wash:#eceef4;
   --p:hsl(207 90% 48%); --pe:hsl(242 100% 48%); --onp:#ffffff; --cl:50%;
-  --inc:#2a78d6; --exp:#eb6834;
+  --inc:#00b87a; --exp:#eb6834;
   --good:#00703c; --warn:#9a6700; --crit:#c4262e;
   --good-bg:#e4f3ea; --warn-bg:#fbf0d3; --crit-bg:#fbe6e6; --info-bg:#e8eefa;
   --sans:'Noto Sans JP','Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',Meiryo,sans-serif;
@@ -26,12 +26,12 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#12141b; --surface:#1b1e27; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2c303c; --wash:#242835;
-  --inc:#3987e5; --exp:#e0662f;
+  --inc:#2fd39a; --exp:#e0662f;
   --good:#5fcf94; --warn:#e8b94a; --crit:#ff8a8f;
   --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12141b; --surface:#1b1e27; --ink:#eceef2; --ink2:#b7bdc8; --muted:#8a92a1; --line:#2c303c; --wash:#242835;
-  --inc:#3987e5; --exp:#e0662f;
+  --inc:#2fd39a; --exp:#e0662f;
   --good:#5fcf94; --warn:#e8b94a; --crit:#ff8a8f;
   --good-bg:#12301f; --warn-bg:#352a0e; --crit-bg:#3a1618; --info-bg:#17243d; color-scheme:dark}
 *{box-sizing:border-box}
@@ -180,7 +180,7 @@ button.rrow:hover{background:var(--wash)}
 .ctag.x{background:var(--wash);color:var(--ink2)}
 .txc .ta{padding:12px 16px 12px 4px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;white-space:nowrap}
 .txc .ta b{font-size:17px;font-weight:900;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.txc .ta b.in2{color:var(--p)}
+.txc .ta b.in2{color:var(--good)}
 .mini{display:flex;gap:4px;align-items:flex-end;height:96px;overflow-x:auto;padding-bottom:2px}
 .mini div{flex:0 0 28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
 .mini i{display:block;width:18px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--c),var(--c2));min-height:2px}
@@ -680,7 +680,7 @@ function insights(A){
 /* ---------- theme (サブスク管理 Pro と同じ作り) ---------- */
 var GRAD=[['紫→ピンク','#8e2de2','#ff2d95'],['マゼンタ→紫','#d500f9','#651fff'],['青→紫','#2979ff','#aa00ff'],['ピンク→オレンジ','#ff2d95','#ff9100'],['赤→マゼンタ','#ff1744','#d500f9'],['シアン→青','#00b8d4','#2962ff']];
 var COLORS=['#2196f3','#f44336','#4caf50','#ff9800','#9c27b0','#e91e63','#009688','#90caf9','#a5d6a7','#f48fb1','#ce93d8','#ffcc80','#fff59d','#80deea','#000080','#000000','#1a237e','#0d47a1','#004d40','#37474f','#212121','#651fff','#7c4dff','#8e2de2','#aa00ff','#d500f9','#e040fb','#ff2d95','#ff4081','#f50057','#ff1744'];
-var TH={c:'#2196f3',e:null,m:'system'};
+var TH={c:'#ff2d95',e:'#ff9100',m:'system'}; // 初期色はアイコンと同じピンク→オレンジ
 try{var tj=JSON.parse(localStorage.getItem('pfin-theme')||'null');if(tj&&tj.c)TH=tj}catch(e){}
 function clamp(v,a,b){return Math.min(b,Math.max(a,v))}
 function hex2hsl(hx){
@@ -763,7 +763,7 @@ function monthChart(A){
   var n=A.months.length,slot=64,pl=44,pr=8,pt=12,pb=40,H=230,W=pl+pr+Math.max(n,3)*slot,ph=H-pt-pb;
   var mx=nice(Math.max.apply(null,A.months.map(function(m){return Math.max(A.by[m].inc,A.by[m].exp)}).concat([1])));
   var sy=function(v){return pt+ph-v/mx*ph};
-  var g='<defs><linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--p)"/><stop offset="1" stop-color="var(--pe)"/></linearGradient><linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--exp)"/><stop offset="1" stop-color="color-mix(in srgb,var(--exp) 70%,#ff2d95)"/></linearGradient></defs>';
+  var g='<defs><linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--inc)"/><stop offset="1" stop-color="color-mix(in srgb,var(--inc) 70%,#00b8d4)"/></linearGradient><linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--exp)"/><stop offset="1" stop-color="color-mix(in srgb,var(--exp) 70%,#ff2d95)"/></linearGradient></defs>';
   for(var i=0;i<=4;i++){var v=mx/4*i,y=sy(v);
     g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+short(Math.round(v))+'</text>';}
   var inSel=function(m){return S.sel==='all'||(S.sel==='r3'?A.months.slice(-3).indexOf(m)>=0:S.sel===m)};
@@ -810,7 +810,7 @@ function tabSum(A){
   var h='';
   if(S.sample)h+='<div class="card hint"><strong>いまはサンプルデータを表示しています</strong><span>手取り月30万円で一人暮らしをしている人を想定した例です。CSV・PDF・メモを読み込むと、自分のデータに置き換わります。</span><button class="btn" id="pickFile" type="button">データを読み込む</button></div>';
   h+=heroSum(A)+periodUI()+metaUI();
-  h+='<section class="card">'+cardHead('bars','月ごとの収入と支出')+'<div class="legend"><span><i class="sw" style="background:var(--p)"></i>収入</span><span><i class="sw" style="background:var(--exp)"></i>支出</span><span>棒をタップすると、その月だけを分析します</span></div>'+monthChart(A)+'</section>';
+  h+='<section class="card">'+cardHead('bars','月ごとの収入と支出')+'<div class="legend"><span><i class="sw" style="background:var(--inc)"></i>収入</span><span><i class="sw" style="background:var(--exp)"></i>支出</span><span>棒をタップすると、その月だけを分析します</span></div>'+monthChart(A)+'</section>';
   h+='<section class="card">'+cardHead('bulb','気づいたこと')+'<div class="ins">'+(ins||'<p class="empty">十分なデータがありません。</p>')+'</div></section>';
   h+='<section class="card">'+cardHead('cal','曜日ごとの支出')+'<div class="wk">'+wk+'</div></section>';
   return h;
